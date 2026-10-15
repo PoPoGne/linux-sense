@@ -54,7 +54,15 @@ Le modifiche sono due:
 - `strncpy` sostituito da `memcpy`, perché la funzione è stata rimossa dal kernel 7.x;
 - aggiunta del modello `Nitro AN14-41` alla tabella DMI, con le stesse impostazioni dell'AN16-41.
 
+## Licenza
+
+Linux Sense è distribuito con licenza [GNU GPL v3.0](LICENSE).
+
 ## Crediti
 
-Driver Linuwu-Sense (GPL-2.0), progetto di partenza DAMX (GPL-3.0).
-Icone [Lucide](https://lucide.dev) (ISC), caratteri Rajdhani e Inter (SIL OFL).
+- Driver Linuwu-Sense (GPL-2.0-or-later)
+- Progetto di partenza DAMX (GPL-3.0)
+- Icone [Lucide](https://lucide.dev) (ISC)
+- Caratteri Rajdhani e Inter (SIL OFL)
+
+Ogni componente di terze parti mantiene la propria licenza.

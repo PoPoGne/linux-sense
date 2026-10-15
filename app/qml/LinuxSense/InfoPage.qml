@@ -76,7 +76,7 @@ ScrollPage {
                 icon: "info"
                 Label {
                     Layout.fillWidth: true
-                    text: "Linux Sense usa il driver Linuwu-Sense (GPL-2.0) ed è nato dal progetto DAMX di PXDiv (GPL-3.0). Icone Lucide (ISC), caratteri Rajdhani e Inter (SIL OFL)."
+                    text: "Linux Sense è software libero con licenza GPL-3.0. Usa il driver Linuwu-Sense (GPL-2.0 o successiva) ed è nato dal progetto DAMX di PXDiv (GPL-3.0). Icone Lucide (ISC), caratteri Rajdhani e Inter (SIL OFL)."
                     color: Theme.textDim
                     font.pixelSize: 12
                     wrapMode: Text.WordWrap
