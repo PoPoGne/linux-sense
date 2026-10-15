@@ -1,0 +1,45 @@
+--- a/src/linuwu_sense.c
++++ b/src/linuwu_sense.c
+@@ -637,6 +637,15 @@
+     },
+     {
+         .callback = dmi_matched,
++        .ident = "Acer Nitro AN14-41",
++        .matches = {
++            DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++            DMI_MATCH(DMI_PRODUCT_NAME, "Nitro AN14-41"),
++        },
++        .driver_data = &quirk_acer_nitro_an16_41,
++    },
++    {
++        .callback = dmi_matched,
+         .ident = "Acer Nitro AN16-41",
+         .matches = {
+             DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+@@ -3570,7 +3579,7 @@
+     char *token;
+     char *input_ptr = input;
+     size_t len = min(count, sizeof(input) - 1);
+-    strncpy(input, buf, len);
++    memcpy(input, buf, len); input[len] = '\0';
+ 
+     if (input[len - 1] == '\n')
+     {
+@@ -4072,7 +4081,7 @@
+     char *input_ptr = input_buf;
+     size_t len = min(count, sizeof(input_buf) - 1);
+ 
+-    strncpy(input_buf, buf, len);
++    memcpy(input_buf, buf, len); input_buf[len] = '\0';
+ 
+     if (input_buf[len - 1] == '\n')
+     {
+@@ -4265,7 +4274,7 @@
+     struct per_zone_color colors;
+     char *input_ptr = str_buf;
+     len = min(count, sizeof(str_buf) - 1);
+-    strncpy(str_buf, buf, len);
++    memcpy(str_buf, buf, len); str_buf[len] = '\0';
+     if (str_buf[len - 1] == '\n')
+     {
+         str_buf[len - 1] = '\0';

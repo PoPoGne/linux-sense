@@ -1,0 +1,5 @@
+# Linux Sense: il tasto NitroSense ("N") dell'Acer Nitro AN14-41 invia lo scancode 0xf5,
+# mappato di default sul codice 425 che KDE non può usare per le scorciatoie.
+# Lo rimappiamo su prog1 (XF86Launch1), assegnato in KDE all'apertura di Linux Sense.
+evdev:atkbd:dmi:*:svnAcer:pnNitroAN14-41:*
+ KEYBOARD_KEY_f5=prog1

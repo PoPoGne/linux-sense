@@ -1,0 +1,27 @@
+module LinuxSense
+singleton Theme 1.0 Theme.qml
+Icon 1.0 Icon.qml
+Label 1.0 Label.qml
+Caption 1.0 Caption.qml
+Card 1.0 Card.qml
+Toggle 1.0 Toggle.qml
+Segmented 1.0 Segmented.qml
+LsSlider 1.0 LsSlider.qml
+LsButton 1.0 LsButton.qml
+PageHeader 1.0 PageHeader.qml
+Chip 1.0 Chip.qml
+Gauge 1.0 Gauge.qml
+Sparkline 1.0 Sparkline.qml
+StatBar 1.0 StatBar.qml
+ProfileCard 1.0 ProfileCard.qml
+NavItem 1.0 NavItem.qml
+WindowButton 1.0 WindowButton.qml
+KeyboardPreview 1.0 KeyboardPreview.qml
+ScrollPage 1.0 ScrollPage.qml
+FanReadout 1.0 FanReadout.qml
+SettingRow 1.0 SettingRow.qml
+DashboardPage 1.0 DashboardPage.qml
+PerformancePage 1.0 PerformancePage.qml
+LightingPage 1.0 LightingPage.qml
+BatteryPage 1.0 BatteryPage.qml
+InfoPage 1.0 InfoPage.qml
