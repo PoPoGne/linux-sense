@@ -46,6 +46,12 @@ Dipendenze: `python3-pyside6`, `kernel-devel`, `dkms`, `gcc`, `make`.
   In Eco e Silenzioso le ventole sono sempre gestite dal firmware.
 - Il tasto N invia lo scancode `0xf5`, che di default diventa il codice 425 e non è usabile da KDE.
   Viene rimappato su `prog1` (XF86Launch1).
+- Luminosità della tastiera (Fn+F11 / Fn+F12): il firmware cambia la luminosità di ±25 senza limiti.
+  Sotto 0 o sopra 100 il valore si riavvolge (8 − 25 = 239) e la tastiera impazzisce.
+  Il servizio intercetta i due tasti, rimappati da hwdb su `kbdillumdown`/`kbdillumup`, e applica livelli 0–25–50–75–100 con spegnimento al minimo, come NitroSense.
+  Senza la rimappatura, la regola generica Acer di systemd trasformerebbe Fn+F12 in "luminosità schermo giù".
+- Leggere il profilo Acer o le impostazioni della batteria costa una chiamata WMI al firmware (~9 ms).
+  Il servizio le tiene in memoria e per il profilo usa le notifiche sysfs invece di interrogarlo di continuo.
 
 ### Patch al driver
 

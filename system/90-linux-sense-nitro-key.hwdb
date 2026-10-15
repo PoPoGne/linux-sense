@@ -1,5 +1,12 @@
-# Linux Sense: il tasto NitroSense ("N") dell'Acer Nitro AN14-41 invia lo scancode 0xf5,
-# mappato di default sul codice 425 che KDE non può usare per le scorciatoie.
-# Lo rimappiamo su prog1 (XF86Launch1), assegnato in KDE all'apertura di Linux Sense.
+# Linux Sense: tasti speciali dell'Acer Nitro AN14-41.
+#
+# 0xf5 tasto NitroSense ("N"): di default diventa il codice 425, che KDE non può
+#      usare per le scorciatoie. Lo rimappiamo su prog1 (XF86Launch1), assegnato
+#      in KDE all'apertura di Linux Sense.
+# 0xef Fn+F12 / 0xf0 Fn+F11, luminosità della tastiera: la regola generica Acer
+#      trasforma 0xef in "luminosità schermo giù". Li rimappiamo sui codici della
+#      retroilluminazione, che il demone usa per gestire i livelli al posto del firmware.
 evdev:atkbd:dmi:*:svnAcer:pnNitroAN14-41:*
  KEYBOARD_KEY_f5=prog1
+ KEYBOARD_KEY_ef=kbdillumup
+ KEYBOARD_KEY_f0=kbdillumdown
