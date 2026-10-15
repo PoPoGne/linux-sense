@@ -229,6 +229,7 @@ class Daemon:
         self.ac = self._ac_online()
         self.last_profile = self.hw.profile()
         self.running = True
+        self._kb_settle = None
 
     # --- config ------------------------------------------------------------
     def _load_config(self):
@@ -384,14 +385,23 @@ class Daemon:
             else:
                 new = min(100, (cur // KB_STEP) * KB_STEP + KB_STEP)
             kb["brightness"] = new
-            self.hw.apply_keyboard(kb)
-            # il firmware applica il proprio passo in parallelo: se ha "vinto" lui, riscriviamo
-            time.sleep(0.25)
-            if self.hw.keyboard_brightness_hw() != new:
-                self.hw.apply_keyboard(kb)
             self.config["keyboard"] = kb
+            self.hw.apply_keyboard(kb)  # ~1,5 ms: subito, anche premendo a raffica
+            # il firmware applica il proprio passo in parallelo: una sola verifica
+            # (e il salvataggio) a raffica finita
+            if self._kb_settle:
+                self._kb_settle.cancel()
+            self._kb_settle = threading.Timer(0.3, self._settle_backlight)
+            self._kb_settle.daemon = True
+            self._kb_settle.start()
+
+    def _settle_backlight(self):
+        with self.lock:
+            kb = self.config["keyboard"]
+            if self.hw.keyboard_brightness_hw() != kb["brightness"]:
+                self.hw.apply_keyboard(kb)
             self._save_config()
-            log.info("luminosità tastiera: %d -> %d", cur, new)
+            log.info("luminosità tastiera: %d", kb["brightness"])
 
     # --- stato -------------------------------------------------------------
     def state(self):
