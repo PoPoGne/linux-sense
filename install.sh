@@ -24,6 +24,9 @@ if ! dkms status "linuwu_sense/$VER" 2>/dev/null | grep -q installed; then
 fi
 echo "blacklist acer_wmi" > /etc/modprobe.d/blacklist-acer_wmi.conf
 echo "linuwu_sense" > /etc/modules-load.d/linuwu_sense.conf
+# LED kbd_backlight creato dal demone, per la luminosità della tastiera in Plasma
+echo "uleds" > /etc/modules-load.d/linux-sense-uleds.conf
+modprobe uleds
 install -m 644 "$SRC/system/linuwu_sense.service" /etc/systemd/system/linuwu_sense.service
 if ! lsmod | grep -q '^linuwu_sense'; then
     modprobe -r acer_wmi 2>/dev/null || true

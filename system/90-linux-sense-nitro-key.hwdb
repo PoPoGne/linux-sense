@@ -5,8 +5,11 @@
 #      in KDE all'apertura di Linux Sense.
 # 0xef Fn+F12 / 0xf0 Fn+F11, luminosità della tastiera: la regola generica Acer
 #      trasforma 0xef in "luminosità schermo giù". Li rimappiamo sui codici della
-#      retroilluminazione, che il demone usa per gestire i livelli al posto del firmware.
+#      retroilluminazione: Plasma fa lo scatto (LED acer::kbd_backlight creato dal
+#      demone) e il demone corregge il passo del firmware. La tastiera non invia il
+#      rilascio di questi due tasti: "!" lo fa generare al driver (force_release),
+#      altrimenti restano "premuti" e KWin ignora tutte le pressioni dopo la prima.
 evdev:atkbd:dmi:*:svnAcer:pnNitroAN14-41:*
  KEYBOARD_KEY_f5=prog1
- KEYBOARD_KEY_ef=kbdillumup
- KEYBOARD_KEY_f0=kbdillumdown
+ KEYBOARD_KEY_ef=!kbdillumup
+ KEYBOARD_KEY_f0=!kbdillumdown

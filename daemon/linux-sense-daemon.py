@@ -20,6 +20,7 @@ import select
 import signal
 import socket
 import struct
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -55,6 +56,19 @@ KEY_KBDILLUMDOWN = 229
 KEY_KBDILLUMUP = 230
 KB_STEP = 25
 INPUT_EVENT = struct.Struct("llHHi")
+
+# Il driver non registra un LED "kbd_backlight", quindi UPower e Plasma non vedono la
+# tastiera (popup sempre allo 0%). Il demone ne crea uno da userspace (modulo uleds)
+# con un livello per scatto: Plasma gestisce i tasti e mostra il popup, il demone
+# riceve il nuovo livello e lo applica. Se nessuno scrive il LED entro KB_KEY_FALLBACK
+# secondi dal tasto (es. alla schermata di accesso) lo scatto lo fa il demone.
+ULEDS = "/dev/uleds"
+ULEDS_DEV = struct.Struct("64si")
+KB_LED_NAME = "acer::kbd_backlight"
+KB_LED_MAX = 100 // KB_STEP
+KB_KEY_FALLBACK = 0.2
+UPOWER_KBD = ["busctl", "--system", "--timeout=2", "call", "org.freedesktop.UPower",
+              "/org/freedesktop/UPower/KbdBacklight", "org.freedesktop.UPower.KbdBacklight"]
 
 KB_EFFECTS = ["static", "breathing", "neon", "wave", "shifting", "zoom", "meteor", "twinkling"]
 USB_LEVELS = [0, 10, 20, 30]
@@ -230,6 +244,8 @@ class Daemon:
         self.last_profile = self.hw.profile()
         self.running = True
         self._kb_settle = None
+        self._kb_key = None  # scatto in attesa di Plasma (vedi KB_KEY_FALLBACK)
+        self._kb_led = False
 
     # --- config ------------------------------------------------------------
     def _load_config(self):
@@ -355,10 +371,12 @@ class Daemon:
         return None
 
     def watch_backlight_keys(self):
-        """Gestisce Fn+F11/Fn+F12 al posto del firmware (vedi KB_STEP).
+        """Fn+F11/Fn+F12: corregge il passo del firmware (vedi KB_STEP).
 
         Legge la tastiera senza bloccarla e considera solo i due codici della
-        retroilluminazione: tutti gli altri tasti vengono ignorati.
+        retroilluminazione: tutti gli altri tasti vengono ignorati. Lo scatto vero
+        lo fa Plasma tramite il LED (vedi ULEDS); il demone interviene da solo se
+        il LED manca o se nessuno lo aggiorna in tempo.
         """
         if not self.hw.has_keyboard():
             return
@@ -374,7 +392,28 @@ class Daemon:
                 for i in range(0, len(data) - INPUT_EVENT.size + 1, INPUT_EVENT.size):
                     _, _, etype, code, value = INPUT_EVENT.unpack_from(data, i)
                     if etype == 1 and value in (1, 2) and code in (KEY_KBDILLUMDOWN, KEY_KBDILLUMUP):
-                        self.step_backlight(1 if code == KEY_KBDILLUMUP else -1)
+                        self._backlight_key(1 if code == KEY_KBDILLUMUP else -1)
+
+    def _backlight_key(self, direction):
+        with self.lock:
+            if not self._kb_led:
+                self.step_backlight(direction)
+                return
+            if self._kb_key is None:
+                self._kb_key = [[], threading.Timer(KB_KEY_FALLBACK, self._backlight_key_fallback)]
+                self._kb_key[1].daemon = True
+                self._kb_key[1].start()
+            self._kb_key[0].append(direction)
+            self._schedule_settle()
+
+    def _backlight_key_fallback(self):
+        with self.lock:
+            if self._kb_key is None:
+                return
+            pending, self._kb_key = self._kb_key[0], None
+            for direction in pending:
+                self.step_backlight(direction)
+            self._publish_led()
 
     def step_backlight(self, direction):
         with self.lock:
@@ -384,16 +423,22 @@ class Daemon:
                 new = max(0, -(-cur // KB_STEP) * KB_STEP - KB_STEP)
             else:
                 new = min(100, (cur // KB_STEP) * KB_STEP + KB_STEP)
-            kb["brightness"] = new
-            self.config["keyboard"] = kb
-            self.hw.apply_keyboard(kb)  # ~1,5 ms: subito, anche premendo a raffica
-            # il firmware applica il proprio passo in parallelo: una sola verifica
-            # (e il salvataggio) a raffica finita
-            if self._kb_settle:
-                self._kb_settle.cancel()
-            self._kb_settle = threading.Timer(0.3, self._settle_backlight)
-            self._kb_settle.daemon = True
-            self._kb_settle.start()
+            self._set_backlight(kb, new)
+
+    def _set_backlight(self, kb, brightness):
+        kb["brightness"] = brightness
+        self.config["keyboard"] = kb
+        self.hw.apply_keyboard(kb)  # ~1,5 ms: subito, anche premendo a raffica
+        self._schedule_settle()
+
+    def _schedule_settle(self):
+        # il firmware applica il proprio passo in parallelo: una sola verifica
+        # (e il salvataggio) a raffica finita
+        if self._kb_settle:
+            self._kb_settle.cancel()
+        self._kb_settle = threading.Timer(0.3, self._settle_backlight)
+        self._kb_settle.daemon = True
+        self._kb_settle.start()
 
     def _settle_backlight(self):
         with self.lock:
@@ -402,6 +447,64 @@ class Daemon:
                 self.hw.apply_keyboard(kb)
             self._save_config()
             log.info("luminosità tastiera: %d", kb["brightness"])
+
+    # --- LED kbd_backlight per UPower/Plasma ---------------------------------
+    @staticmethod
+    def _led_level(brightness):
+        return (max(0, min(100, int(brightness))) + KB_STEP // 2) // KB_STEP
+
+    def _publish_led(self):
+        """Comunica il livello attuale a UPower, che avvisa Plasma.
+
+        Passando da UPower (e non scrivendo direttamente il LED) Plasma riceve il
+        segnale di cambio e aggiorna il cursore e il prossimo scatto.
+        """
+        if not self._kb_led:
+            return
+        level = self._led_level((self.config.get("keyboard") or {}).get("brightness", 0))
+        try:
+            subprocess.run(UPOWER_KBD + ["SetBrightness", "i", str(level)], check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (OSError, subprocess.CalledProcessError):
+            write(Path("/sys/class/leds") / KB_LED_NAME / "brightness", str(level))
+
+    def watch_backlight_led(self):
+        if not self.hw.has_keyboard():
+            return
+        if not os.path.exists(ULEDS):
+            subprocess.run(["modprobe", "uleds"], check=False)
+        try:
+            fd = os.open(ULEDS, os.O_RDWR)
+            os.write(fd, ULEDS_DEV.pack(KB_LED_NAME.encode(), KB_LED_MAX))
+        except OSError as e:
+            log.warning("LED %s non creato (%s): Plasma non vedrà la luminosità", KB_LED_NAME, e)
+            return
+        with self.lock:
+            level = self._led_level((self.config.get("keyboard") or {}).get("brightness", 0))
+            write(Path("/sys/class/leds") / KB_LED_NAME / "brightness", str(level))
+            self._kb_led = True
+        try:
+            while self.running:
+                if not select.select([fd], [], [], 1)[0]:
+                    continue
+                data = os.read(fd, 4)
+                if len(data) == 4:
+                    self._led_written(struct.unpack("i", data)[0])
+        finally:
+            os.close(fd)
+
+    def _led_written(self, level):
+        """Nuovo livello scritto sul LED (da Plasma, UPower o dal demone stesso)."""
+        with self.lock:
+            if self._kb_key is not None:
+                self._kb_key[0].pop(0)  # lo scatto del tasto l'ha fatto Plasma
+                if not self._kb_key[0]:
+                    self._kb_key[1].cancel()
+                    self._kb_key = None
+            kb = dict(self.config.get("keyboard") or self.hw.keyboard_from_driver())
+            level = max(0, min(KB_LED_MAX, level))
+            if self._led_level(kb.get("brightness", 0)) != level:
+                self._set_backlight(kb, level * KB_STEP)
 
     # --- stato -------------------------------------------------------------
     def state(self):
@@ -477,6 +580,7 @@ class Daemon:
                     raise RuntimeError("impossibile impostare la tastiera")
                 self.config["keyboard"] = kb
                 self._save_config()
+                self._publish_led()
                 return self.state()
             if cmd == "set_battery_limiter":
                 self.hw.set_feature("battery_limiter", "1" if req["enabled"] else "0")
@@ -547,6 +651,7 @@ def main():
     d.restore()
     threading.Thread(target=d.watch, daemon=True).start()
     threading.Thread(target=d.watch_backlight_keys, daemon=True).start()
+    threading.Thread(target=d.watch_backlight_led, daemon=True).start()
     d.serve()
 
 
