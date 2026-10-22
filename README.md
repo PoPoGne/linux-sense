@@ -21,24 +21,7 @@ It was built on an Acer Nitro 14 (AN14-41) running Fedora 44 KDE with kernel 7.2
 - **Battery**: 80% charge limit, calibration, USB charging while powered off, health and runtime
 - **Automatic profile**: one profile for the power adapter and one for battery
 - **N key** on the keyboard opens the app
-- **Multilingual interface**: English, Italian, Spanish, French, German and Portuguese, following the system language
-
-## How it works
-
-Linux Sense is made of three parts:
-
-| Path | Contents |
-|---|---|
-| `app/` | User interface (Python + PySide6/QML), fonts and icons |
-| `daemon/` | Root service `linux-sense.service`: socket `/run/linux-sense.sock`, line-based JSON |
-| `driver/` | `linuwu_sense` 25.701 driver for DKMS with local patches (`linux-sense.patch`) |
-| `system/` | hwdb rule for the N key and the unit that unloads the driver on shutdown |
-| `scripts/` | KDE shortcut registration |
-| `logo/` | Logo generated with `vectorcraft-cli` (`build_logo.py`) and exported files |
-
-The daemon talks to the kernel driver through sysfs and exposes a small JSON
-protocol over a Unix socket. The app is a QML front end that only talks to that
-socket, so the UI never needs root.
+- **Multilingual interface**: English, Italian, Spanish, French, German, Portuguese, Dutch, Polish, Russian and Chinese, following the system language
 
 ## Requirements
 
@@ -86,8 +69,14 @@ The interface follows the system language. These translations ship with the app:
 | French | `fr` | `app/translations/fr.json` |
 | German | `de` | `app/translations/de.json` |
 | Portuguese | `pt` | `app/translations/pt.json` |
+| Dutch | `nl` | `app/translations/nl.json` |
+| Polish | `pl` | `app/translations/pl.json` |
+| Russian | `ru` | `app/translations/ru.json` |
+| Chinese | `zh` | `app/translations/zh.json` |
 
 If the system language has no translation file, the app falls back to English.
+Russian and Chinese use the system fonts for the glyphs that the bundled fonts
+do not cover, as usual with fontconfig.
 
 Translations are plain JSON files: the key is the English source string, the value
 is the translated one. To add a language, copy `app/translations/it.json`,
