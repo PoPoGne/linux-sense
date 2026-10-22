@@ -11,7 +11,8 @@ import time
 from collections import deque
 from pathlib import Path
 
-from PySide6.QtCore import (QMetaObject, QObject, QSize, Qt, QThread, QTimer, Property, Signal, Slot)
+from PySide6.QtCore import (QLocale, QMetaObject, QObject, QSize, Qt, QThread, QTimer,
+                            Property, Signal, Slot)
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtGui import QFontDatabase, QGuiApplication, QIcon, QImage, QPainter
 from PySide6.QtQml import QQmlApplicationEngine
@@ -19,10 +20,41 @@ from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtSvg import QSvgRenderer
 
+from i18n import Translator
+
 APP_VERSION = "1.0.0"
 HERE = Path(__file__).resolve().parent
 SOCKET_PATH = "/run/linux-sense.sock"
 HISTORY = 90
+
+
+class Tr(QObject):
+    """Translation object exposed to QML as "tr"."""
+
+    def __init__(self, translator, parent=None):
+        super().__init__(parent)
+        self._t = translator
+        self._language = translator.language
+
+    @Property(str, constant=True)
+    def language(self):
+        return self._language
+
+    @Slot(str, result=str)
+    def t(self, text):
+        return self._t.t(text)
+
+    @Slot(str, "QVariantMap", result=str)
+    def fmt(self, text, values):
+        return self._t.fmt(text, values)
+
+
+def system_language():
+    """Language code from the environment, else from the system locale."""
+    override = os.environ.get("LINUX_SENSE_LANG")
+    if override:
+        return override
+    return QLocale.system().name()
 
 
 def read(path, default=None):
@@ -442,7 +474,9 @@ def main():
         QFontDatabase.addApplicationFont(str(f))
 
     backend = Backend()
+    translator = Translator(system_language())
     engine = QQmlApplicationEngine()
+    engine.rootContext().setContextProperty("tr", Tr(translator, engine))
     engine.addImageProvider("icon", IconProvider())
     engine.addImportPath(str(HERE / "qml"))
     engine.rootContext().setContextProperty("backend", backend)

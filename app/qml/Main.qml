@@ -22,11 +22,11 @@ Window {
     Binding { target: Theme; property: "profile"; value: (win.st.profile || {}).current || "balanced" }
 
     readonly property var pages: [
-        { name: "Overview", icon: "layout-dashboard" },
-        { name: "Performance", icon: "gauge" },
-        { name: "Lighting", icon: "keyboard" },
-        { name: "Battery", icon: "battery-charging" },
-        { name: "About", icon: "info" }
+        { name: tr.t("Overview"), icon: "layout-dashboard" },
+        { name: tr.t("Performance"), icon: "gauge" },
+        { name: tr.t("Lighting"), icon: "keyboard" },
+        { name: tr.t("Battery"), icon: "battery-charging" },
+        { name: tr.t("About"), icon: "info" }
     ]
 
     Rectangle {
@@ -118,7 +118,7 @@ Window {
                         }
                     }
 
-                    Caption { text: "Menu"; Layout.leftMargin: 10; Layout.bottomMargin: 6 }
+                    Caption { text: tr.t("Menu"); Layout.leftMargin: 10; Layout.bottomMargin: 6 }
                     Repeater {
                         model: win.pages
                         NavItem {
@@ -162,7 +162,7 @@ Window {
                                     }
                                 }
                                 Label {
-                                    text: backend.connected ? "Service running" : "Service not running"
+                                    text: backend.connected ? tr.t("Service running") : tr.t("Service not running")
                                     color: Theme.textDim
                                     font.pixelSize: 12
                                 }
@@ -171,7 +171,7 @@ Window {
                                 spacing: 8
                                 Icon { name: Theme.profileInfo(Theme.profile).icon; size: 14; color: Theme.accentRaw }
                                 Label {
-                                    text: "Profile " + Theme.profileInfo(Theme.profile).name
+                                    text: tr.fmt("Profile {name}", {"name": tr.t(Theme.profileInfo(Theme.profile).name)})
                                     color: Theme.textDim
                                     font.pixelSize: 12
                                 }
@@ -227,7 +227,7 @@ Window {
                         spacing: 12
                         Icon { name: "power"; size: 18; color: Theme.danger }
                         Label {
-                            text: "The Linux Sense service is not responding. Start it with:  sudo systemctl start linux-sense"
+                            text: tr.t("The Linux Sense service is not responding. Start it with:  sudo systemctl start linux-sense")
                             color: Theme.text
                             font.pixelSize: 13
                         }
@@ -283,7 +283,7 @@ Window {
             Connections {
                 target: backend
                 function onToast(message, isError) {
-                    toast.text = message
+                    toast.text = tr.t(message)
                     toast.error = isError
                     toast.shown = true
                     toastTimer.restart()

@@ -32,14 +32,14 @@ ScrollPage {
     }
 
     readonly property var effects: [
-        { id: "static", name: "Static", icon: "square", color: false, dir: false, speed: false },
-        { id: "breathing", name: "Breathing", icon: "activity", color: true, dir: false, speed: true },
-        { id: "neon", name: "Neon", icon: "palette", color: false, dir: false, speed: true },
-        { id: "wave", name: "Wave", icon: "waves", color: false, dir: true, speed: true },
-        { id: "shifting", name: "Shifting", icon: "arrow-left-right", color: true, dir: true, speed: true },
-        { id: "zoom", name: "Zoom", icon: "circle-gauge", color: true, dir: false, speed: true },
-        { id: "meteor", name: "Meteor", icon: "zap", color: true, dir: true, speed: true },
-        { id: "twinkling", name: "Twinkling", icon: "sparkles", color: true, dir: false, speed: true }
+        { id: "static", name: tr.t("Static"), icon: "square", color: false, dir: false, speed: false },
+        { id: "breathing", name: tr.t("Breathing"), icon: "activity", color: true, dir: false, speed: true },
+        { id: "neon", name: tr.t("Neon"), icon: "palette", color: false, dir: false, speed: true },
+        { id: "wave", name: tr.t("Wave"), icon: "waves", color: false, dir: true, speed: true },
+        { id: "shifting", name: tr.t("Shifting"), icon: "arrow-left-right", color: true, dir: true, speed: true },
+        { id: "zoom", name: tr.t("Zoom"), icon: "circle-gauge", color: true, dir: false, speed: true },
+        { id: "meteor", name: tr.t("Meteor"), icon: "zap", color: true, dir: true, speed: true },
+        { id: "twinkling", name: tr.t("Twinkling"), icon: "sparkles", color: true, dir: false, speed: true }
     ]
     function effectInfo(id) {
         for (var i = 0; i < effects.length; i++) if (effects[i].id === id) return effects[i]
@@ -67,12 +67,12 @@ ScrollPage {
 
     PageHeader {
         Layout.fillWidth: true
-        title: "Lighting"
-        subtitle: "4-zone RGB keyboard"
+        title: tr.t("Lighting")
+        subtitle: tr.t("4-zone RGB keyboard")
         Row {
             spacing: 12
             Label {
-                text: page.kb.brightness > 0 ? "On" : "Off"
+                text: page.kb.brightness > 0 ? tr.t("On") : tr.t("Off")
                 color: Theme.textDim
                 font.pixelSize: 13
                 anchors.verticalCenter: parent.verticalCenter
@@ -109,8 +109,8 @@ ScrollPage {
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             Layout.alignment: Qt.AlignTop
-            title: "Effect"
-            subtitle: page.fx.id === "static" ? "A fixed color for each zone." : "Animation handled by the keyboard."
+            title: tr.t("Effect")
+            subtitle: page.fx.id === "static" ? tr.t("A fixed color for each zone.") : tr.t("Animation handled by the keyboard.")
             icon: "sparkles"
             GridLayout {
                 Layout.fillWidth: true
@@ -159,12 +159,12 @@ ScrollPage {
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             Layout.alignment: Qt.AlignTop
-            title: "Color"
-            subtitle: !page.usesColor ? "This effect uses the whole color spectrum."
+            title: tr.t("Color")
+            subtitle: !page.usesColor ? tr.t("This effect uses the whole color spectrum.")
                       : page.kb.effect === "static"
-                        ? (page.zone >= 0 ? "You are editing zone " + (page.zone + 1) + ". Click the keyboard to change it."
-                                          : "You are editing all zones. Click a zone to select it.")
-                        : "Effect color."
+                        ? (page.zone >= 0 ? tr.fmt("You are editing zone {zone}. Click the keyboard to change it.", {"zone": page.zone + 1})
+                                          : tr.t("You are editing all zones. Click a zone to select it."))
+                        : tr.t("Effect color.")
             icon: "palette"
 
             // zone selector
@@ -191,7 +191,7 @@ ScrollPage {
                                 color: modelData >= 0 ? "#" + page.kb.zones[modelData] : "transparent"
                             }
                             Label {
-                                text: modelData < 0 ? "All" : "Zone " + (modelData + 1)
+                                text: modelData < 0 ? tr.t("All") : tr.fmt("Zone {zone}", {"zone": modelData + 1})
                                 font.pixelSize: 12
                                 color: parent.parent.active ? Theme.text : Theme.textDim
                             }
@@ -278,7 +278,7 @@ ScrollPage {
 
     Card {
         Layout.fillWidth: true
-        title: "Adjustments"
+        title: tr.t("Adjustments")
         icon: "sliders-horizontal"
         GridLayout {
             Layout.fillWidth: true
@@ -293,7 +293,7 @@ ScrollPage {
                 RowLayout {
                     Layout.fillWidth: true
                     Icon { name: "sun"; size: 16; color: Theme.textDim }
-                    Label { text: "Brightness"; color: Theme.textDim; font.pixelSize: 13; Layout.fillWidth: true }
+                    Label { text: tr.t("Brightness"); color: Theme.textDim; font.pixelSize: 13; Layout.fillWidth: true }
                     Label { text: page.kb.brightness + "%"; font.family: Theme.display; font.weight: Font.Bold; font.pixelSize: 18 }
                 }
                 LsSlider {
@@ -312,7 +312,7 @@ ScrollPage {
                 RowLayout {
                     Layout.fillWidth: true
                     Icon { name: "gauge"; size: 16; color: Theme.textDim }
-                    Label { text: "Speed"; color: Theme.textDim; font.pixelSize: 13; Layout.fillWidth: true }
+                    Label { text: tr.t("Speed"); color: Theme.textDim; font.pixelSize: 13; Layout.fillWidth: true }
                     Label { text: page.kb.speed; font.family: Theme.display; font.weight: Font.Bold; font.pixelSize: 18 }
                 }
                 LsSlider {
@@ -329,14 +329,14 @@ ScrollPage {
                 opacity: page.fx.dir ? 1 : 0.35
                 RowLayout {
                     Icon { name: "arrow-left-right"; size: 16; color: Theme.textDim }
-                    Label { text: "Direction"; color: Theme.textDim; font.pixelSize: 13 }
+                    Label { text: tr.t("Direction"); color: Theme.textDim; font.pixelSize: 13 }
                 }
                 Segmented {
                     enabledState: page.fx.dir
                     value: page.kb.direction
                     options: [
-                        { value: 1, label: "Rightward" },
-                        { value: 2, label: "Leftward" }
+                        { value: 1, label: tr.t("Rightward") },
+                        { value: 2, label: tr.t("Leftward") }
                     ]
                     onPicked: (v) => page.change({ direction: v })
                 }

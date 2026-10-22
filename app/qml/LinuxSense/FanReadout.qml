@@ -48,14 +48,14 @@ Rectangle {
                 spacing: 6
                 Label {
                     id: num
-                    text: root.rpm > 0 ? root.rpm.toLocaleString(Qt.locale("it_IT"), "f", 0) : "Ferma"
+                    text: root.rpm > 0 ? root.rpm.toLocaleString(Qt.locale(), "f", 0) : tr.t("Stopped")
                     font.family: Theme.display
                     font.weight: Font.Bold
                     font.pixelSize: 30
                 }
                 Label {
                     visible: root.rpm > 0
-                    text: "RPM"
+                    text: tr.t("RPM")
                     color: Theme.textDim
                     font.family: Theme.display
                     font.weight: Font.DemiBold

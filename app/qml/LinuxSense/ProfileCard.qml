@@ -56,14 +56,14 @@ Rectangle {
         }
         Item { Layout.fillHeight: true }
         Label {
-            text: root.profile ? root.profile.name : ""
+            text: root.profile ? tr.t(root.profile.name) : ""
             font.family: Theme.display
             font.weight: Font.Bold
             font.pixelSize: 23
         }
         Label {
             Layout.fillWidth: true
-            text: root.available ? (root.profile ? root.profile.desc : "") : "Only available with the power adapter connected."
+            text: root.available ? (root.profile ? tr.t(root.profile.desc) : "") : tr.t("Only available with the power adapter connected.")
             color: Theme.textDim
             font.pixelSize: 12
             wrapMode: Text.WordWrap
@@ -84,7 +84,7 @@ Rectangle {
         spacing: 10
         Icon { name: root.profile ? root.profile.icon : ""; size: 20; color: root.selected ? root.tint : Theme.textDim }
         Label {
-            text: root.profile ? root.profile.name : ""
+            text: root.profile ? tr.t(root.profile.name) : ""
             font.family: Theme.display
             font.weight: Font.Bold
             font.pixelSize: 17

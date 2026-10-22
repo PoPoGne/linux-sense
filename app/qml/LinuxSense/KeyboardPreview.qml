@@ -203,7 +203,7 @@ Item {
                 Caption {
                     anchors.horizontalCenter: parent.horizontalCenter
                     y: 7
-                    text: "Zone " + (index + 1)
+                    text: tr.fmt("Zone {zone}", {"zone": index + 1})
                     color: index === root.selectedZone ? Theme.text : Theme.textMute
                 }
             }

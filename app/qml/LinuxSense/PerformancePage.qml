@@ -22,11 +22,11 @@ ScrollPage {
 
     PageHeader {
         Layout.fillWidth: true
-        title: "Performance"
-        subtitle: "Thermal profiles and fan control"
+        title: tr.t("Performance")
+        subtitle: tr.t("Thermal profiles and fan control")
         Chip {
             icon: page.st.ac ? "plug" : "battery"
-            text: page.st.ac ? "Power adapter connected" : "On battery"
+            text: page.st.ac ? tr.t("Power adapter connected") : tr.t("On battery")
             tint: Theme.textDim
         }
     }
@@ -47,7 +47,7 @@ ScrollPage {
             Icon { name: "info"; size: 18; color: Theme.warning }
             Label {
                 Layout.fillWidth: true
-                text: "On battery the Acer firmware only allows Eco and Balanced. Connect the power adapter for Quiet, Performance and Turbo."
+                text: tr.t("On battery the Acer firmware only allows Eco and Balanced. Connect the power adapter for Quiet, Performance and Turbo.")
                 color: Theme.textDim
                 font.pixelSize: 13
                 wrapMode: Text.WordWrap
@@ -55,7 +55,7 @@ ScrollPage {
         }
     }
 
-    Caption { text: "Thermal profile"; Layout.topMargin: 4 }
+    Caption { text: tr.t("Thermal profile"); Layout.topMargin: 4 }
     RowLayout {
         Layout.fillWidth: true
         spacing: 14
@@ -80,18 +80,18 @@ ScrollPage {
             Layout.fillWidth: true
             Layout.preferredWidth: 3
             Layout.alignment: Qt.AlignTop
-            title: "Fans"
+            title: tr.t("Fans")
             subtitle: page.fan.locked
-                      ? "In " + Theme.profileInfo(page.prof.current).name + " the fans are managed automatically by the firmware."
-                      : "Automatic, maximum or manual control."
+                      ? tr.fmt("In {profile} the fans are managed automatically by the firmware.", {"profile": tr.t(Theme.profileInfo(page.prof.current).name)})
+                      : tr.t("Automatic, maximum or manual control.")
             icon: "fan"
             headerRight: Segmented {
                 enabledState: !page.fan.locked
                 value: page.fan.locked ? "auto" : page.fan.mode
                 options: [
-                    { value: "auto", label: "Automatic" },
-                    { value: "max", label: "Maximum" },
-                    { value: "custom", label: "Manual" }
+                    { value: "auto", label: tr.t("Automatic") },
+                    { value: "max", label: tr.t("Maximum") },
+                    { value: "custom", label: tr.t("Manual") }
                 ]
                 onPicked: (v) => backend.setFan(v, page.cpuPct, page.gpuPct)
             }
@@ -99,8 +99,8 @@ ScrollPage {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 14
-                FanReadout { Layout.fillWidth: true; label: "CPU fan"; rpm: page.tm.fan_cpu || 0 }
-                FanReadout { Layout.fillWidth: true; label: "GPU fan"; rpm: page.tm.fan_gpu || 0 }
+                FanReadout { Layout.fillWidth: true; label: tr.t("CPU fan"); rpm: page.tm.fan_cpu || 0 }
+                FanReadout { Layout.fillWidth: true; label: tr.t("GPU fan"); rpm: page.tm.fan_gpu || 0 }
             }
 
             ColumnLayout {
@@ -110,8 +110,8 @@ ScrollPage {
                 spacing: 6
                 Repeater {
                     model: [
-                        { key: "cpu", label: "CPU fan speed" },
-                        { key: "gpu", label: "GPU fan speed" }
+                        { key: "cpu", label: tr.t("CPU fan speed") },
+                        { key: "gpu", label: tr.t("GPU fan speed") }
                     ]
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -143,8 +143,8 @@ ScrollPage {
             Layout.fillWidth: true
             Layout.preferredWidth: 2
             Layout.alignment: Qt.AlignTop
-            title: "Automatic profile"
-            subtitle: "Remembers one profile for the power adapter and one for battery, and applies them when you plug or unplug the cable."
+            title: tr.t("Automatic profile")
+            subtitle: tr.t("Remembers one profile for the power adapter and one for battery, and applies them when you plug or unplug the cable.")
             icon: "rotate-ccw"
             headerRight: Toggle {
                 checked: !!page.prof.auto
@@ -152,8 +152,8 @@ ScrollPage {
             }
             Repeater {
                 model: [
-                    { icon: "plug", label: "On power adapter", key: "ac" },
-                    { icon: "battery", label: "On battery", key: "battery" }
+                    { icon: "plug", label: tr.t("On power adapter"), key: "ac" },
+                    { icon: "battery", label: tr.t("On battery"), key: "battery" }
                 ]
                 Rectangle {
                     Layout.fillWidth: true
@@ -171,13 +171,13 @@ ScrollPage {
                         Icon { name: modelData.icon; size: 17; color: Theme.textDim }
                         Label { text: modelData.label; color: Theme.textDim; font.pixelSize: 13; Layout.fillWidth: true }
                         Icon { name: parent.parent.p.icon; size: 16; color: parent.parent.p.color }
-                        Label { text: parent.parent.p.name; font.family: Theme.display; font.weight: Font.Bold; font.pixelSize: 17 }
+                        Label { text: tr.t(parent.parent.p.name); font.family: Theme.display; font.weight: Font.Bold; font.pixelSize: 17 }
                     }
                 }
             }
             Label {
                 Layout.fillWidth: true
-                text: "The physical profile key updates these preferences too: the app syncs by itself."
+                text: tr.t("The physical profile key updates these preferences too: the app syncs by itself.")
                 color: Theme.textMute
                 font.pixelSize: 12
                 wrapMode: Text.WordWrap

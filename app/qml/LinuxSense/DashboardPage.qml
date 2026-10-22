@@ -13,14 +13,14 @@ ScrollPage {
 
     PageHeader {
         Layout.fillWidth: true
-        title: "Overview"
-        subtitle: (page.st.model || "Acer") + " · live system status"
+        title: tr.t("Overview")
+        subtitle: (page.st.model || "Acer") + " · " + tr.t("live system status")
         Chip {
             icon: page.st.ac ? "plug" : "battery"
-            text: page.st.ac ? "Power adapter" : "Battery " + (page.bat.percent !== undefined ? page.bat.percent + "%" : "")
+            text: page.st.ac ? tr.t("Power adapter") : (page.bat.percent !== undefined ? tr.fmt("Battery {percent}%", {"percent": page.bat.percent}) : tr.t("Battery"))
             tint: Theme.textDim
         }
-        Chip { icon: Theme.profileInfo(page.prof.current).icon; text: Theme.profileInfo(page.prof.current).name; tint: Theme.accentRaw }
+        Chip { icon: Theme.profileInfo(page.prof.current).icon; text: tr.t(Theme.profileInfo(page.prof.current).name); tint: Theme.accentRaw }
     }
 
     // main indicators
@@ -33,26 +33,26 @@ ScrollPage {
             Item { Layout.fillWidth: true; implicitHeight: g1.implicitHeight
                 Gauge { id: g1; anchors.centerIn: parent; label: "CPU"; unit: "°C"
                     value: page.tm.cpu_temp || 0; from: 30; to: 100; active: page.tm.cpu_temp !== undefined
-                    sublabel: page.tm.cpu_usage !== undefined && page.tm.cpu_usage !== null ? "Load " + Math.round(page.tm.cpu_usage) + "%" : ""
+                    sublabel: page.tm.cpu_usage !== undefined && page.tm.cpu_usage !== null ? tr.fmt("Load {value}%", {"value": Math.round(page.tm.cpu_usage)}) : ""
                     color: (page.tm.cpu_temp || 0) > 88 ? Theme.danger : Theme.accent }
             }
             Item { Layout.fillWidth: true; implicitHeight: g2.implicitHeight
                 Gauge { id: g2; anchors.centerIn: parent; label: "GPU"; unit: "°C"
                     value: page.tm.dgpu_temp || 0; from: 30; to: 95; active: !!page.tm.dgpu_active && page.tm.dgpu_temp !== undefined && page.tm.dgpu_temp !== null
-                    sublabel: page.tm.dgpu_active ? "Load " + Math.round(page.tm.dgpu_util || 0) + "%" : "RTX suspended"
+                    sublabel: page.tm.dgpu_active ? tr.fmt("Load {value}%", {"value": Math.round(page.tm.dgpu_util || 0)}) : tr.t("RTX suspended")
                     color: (page.tm.dgpu_temp || 0) > 85 ? Theme.danger : Theme.accent }
             }
             Item { Layout.fillWidth: true; implicitHeight: g3.implicitHeight
-                Gauge { id: g3; anchors.centerIn: parent; label: "CPU fan"; unit: ""
+                Gauge { id: g3; anchors.centerIn: parent; label: tr.t("CPU fan"); unit: ""
                     value: page.tm.fan_cpu || 0; from: 0; to: 7000
                     valueText: (page.tm.fan_cpu || 0) > 0 ? (page.tm.fan_cpu / 1000).toFixed(1) + "k" : "0"
-                    sublabel: "revolutions per minute" }
+                    sublabel: tr.t("revolutions per minute") }
             }
             Item { Layout.fillWidth: true; implicitHeight: g4.implicitHeight
-                Gauge { id: g4; anchors.centerIn: parent; label: "GPU fan"; unit: ""
+                Gauge { id: g4; anchors.centerIn: parent; label: tr.t("GPU fan"); unit: ""
                     value: page.tm.fan_gpu || 0; from: 0; to: 7000
                     valueText: (page.tm.fan_gpu || 0) > 0 ? (page.tm.fan_gpu / 1000).toFixed(1) + "k" : "0"
-                    sublabel: "revolutions per minute" }
+                    sublabel: tr.t("revolutions per minute") }
             }
         }
     }
@@ -65,8 +65,8 @@ ScrollPage {
         Card {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
-            title: "Profile"
-            subtitle: "Quick switch"
+            title: tr.t("Profile")
+            subtitle: tr.t("Quick switch")
             icon: "gauge"
             Repeater {
                 model: Theme.profiles
@@ -86,8 +86,8 @@ ScrollPage {
         Card {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Temperature"
-            subtitle: "Last 90 seconds"
+            title: tr.t("Temperature")
+            subtitle: tr.t("Last 90 seconds")
             icon: "thermometer"
             headerRight: Row {
                 spacing: 16
@@ -127,23 +127,23 @@ ScrollPage {
 
     Card {
         Layout.fillWidth: true
-        title: "Risorse"
-        subtitle: page.tm.cpu_freq ? "Frequenza media CPU " + page.fmt(page.tm.cpu_freq, 2) + " GHz" : ""
+        title: tr.t("Resources")
+        subtitle: page.tm.cpu_freq ? tr.fmt("Average CPU frequency {value} GHz", {"value": page.fmt(page.tm.cpu_freq, 2)}) : ""
         icon: "activity"
         GridLayout {
             Layout.fillWidth: true
             columns: 2
             columnSpacing: 36
             rowSpacing: 20
-            StatBar { Layout.fillWidth: true; icon: "cpu"; label: "Processor"
+            StatBar { Layout.fillWidth: true; icon: "cpu"; label: tr.t("Processor")
                 valueText: page.fmt(page.tm.cpu_usage, 0) + "%"; fraction: (page.tm.cpu_usage || 0) / 100 }
-            StatBar { Layout.fillWidth: true; icon: "memory-stick"; label: "Memory"
+            StatBar { Layout.fillWidth: true; icon: "memory-stick"; label: tr.t("Memory")
                 valueText: page.fmt(page.tm.ram_used, 1) + " / " + page.fmt(page.tm.ram_total, 0) + " GB"
                 fraction: page.tm.ram_total ? page.tm.ram_used / page.tm.ram_total : 0 }
-            StatBar { Layout.fillWidth: true; icon: "monitor-smartphone"; label: "Radeon 780M integrated graphics"
+            StatBar { Layout.fillWidth: true; icon: "monitor-smartphone"; label: tr.t("Radeon 780M integrated graphics")
                 valueText: page.fmt(page.tm.igpu_busy, 0) + "%"; fraction: (page.tm.igpu_busy || 0) / 100 }
             StatBar { Layout.fillWidth: true; icon: page.st.ac ? "battery-charging" : "battery"
-                label: page.bat.status === "Charging" ? "Battery · charging" : (page.st.ac ? "Battery · adapter connected" : "Battery · draw " + page.fmt(page.bat.power, 1) + " W")
+                label: page.bat.status === "Charging" ? tr.t("Battery · charging") : (page.st.ac ? tr.t("Battery · adapter connected") : tr.fmt("Battery · draw {power} W", {"power": page.fmt(page.bat.power, 1)}))
                 valueText: page.fmt(page.bat.percent, 0) + "%"; fraction: (page.bat.percent || 0) / 100
                 color: (page.bat.percent || 0) < 20 ? Theme.danger : Theme.accent }
         }

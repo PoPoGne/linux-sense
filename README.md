@@ -67,6 +67,24 @@ sudo systemctl start linux-sense
 sudo systemctl status linux-sense
 ```
 
+## Languages
+
+The interface follows the system language. English is the source language; Italian
+ships a full translation. If the system language has no translation file, the app
+falls back to English.
+
+Translations are plain JSON files in `app/translations/`: the key is the English
+source string, the value is the translated one. To add a language, copy
+`app/translations/it.json`, translate the values, and save it as
+`app/translations/<language>.json` (`de.json`, `fr.json`, ...). Missing keys fall
+back to English, so a partial file is safe.
+
+Useful while testing:
+
+```bash
+LINUX_SENSE_LANG=it ./linux-sense     # force a language
+```
+
 ## Technical notes
 
 - The profile is read from and written to the `acer-wmi` platform-profile handler. The service propagates it to `amd-pmf`.
