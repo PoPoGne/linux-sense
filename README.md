@@ -13,10 +13,6 @@ It was built on an Acer Nitro 14 (AN14-41) running Fedora 44 KDE with kernel 7.2
 |---|---|
 | ![Overview](docs/overview.png) | ![Performance](docs/performance.png) |
 
-Lighting page, Italian interface:
-
-![Lighting in Italian](docs/lighting-it.png)
-
 ## Features
 
 - **Thermal profiles**: Eco, Quiet, Balanced, Performance and Turbo, kept in sync with the laptop's physical profile key
@@ -25,6 +21,7 @@ Lighting page, Italian interface:
 - **Battery**: 80% charge limit, calibration, USB charging while powered off, health and runtime
 - **Automatic profile**: one profile for the power adapter and one for battery
 - **N key** on the keyboard opens the app
+- **Multilingual interface**: English, Italian, Spanish, French, German and Portuguese, following the system language
 
 ## How it works
 
@@ -79,15 +76,24 @@ sudo systemctl status linux-sense
 
 ## Languages
 
-The interface follows the system language. English is the source language; Italian
-ships a full translation. If the system language has no translation file, the app
-falls back to English.
+The interface follows the system language. These translations ship with the app:
 
-Translations are plain JSON files in `app/translations/`: the key is the English
-source string, the value is the translated one. To add a language, copy
-`app/translations/it.json`, translate the values, and save it as
-`app/translations/<language>.json` (`de.json`, `fr.json`, ...). Missing keys fall
-back to English, so a partial file is safe.
+| Language | Code | File |
+|---|---|---|
+| English (source) | `en` | built in |
+| Italian | `it` | `app/translations/it.json` |
+| Spanish | `es` | `app/translations/es.json` |
+| French | `fr` | `app/translations/fr.json` |
+| German | `de` | `app/translations/de.json` |
+| Portuguese | `pt` | `app/translations/pt.json` |
+
+If the system language has no translation file, the app falls back to English.
+
+Translations are plain JSON files: the key is the English source string, the value
+is the translated one. To add a language, copy `app/translations/it.json`,
+translate the values, and save it as `app/translations/<language>.json`
+(`nl.json`, `pl.json`, ...). Missing keys fall back to English, so a partial file
+is safe.
 
 Useful while testing:
 
