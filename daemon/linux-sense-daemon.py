@@ -47,6 +47,10 @@ SECONDARY_MAP = {
 AC_ONLY = {"quiet", "balanced-performance", "performance"}
 # In Eco/Silenzioso il driver forza le ventole in automatico
 FAN_LOCKED = {"low-power", "quiet"}
+# Al cambio di alimentazione tuned-ppd applica il suo profilo (es. "balanced" a rete)
+# e riscrive platform_profile subito dopo di noi: per qualche secondo i cambi esterni
+# vengono annullati invece di essere ricordati come scelta dell'utente.
+POWER_SETTLE = 5
 
 # Tasti Fn+F11/Fn+F12 (rimappati da hwdb su KEY_KBDILLUMDOWN/UP).
 # Il firmware cambia la luminosità di ±25 ma senza limiti: sotto 0 o sopra 100 il
@@ -243,6 +247,7 @@ class Daemon:
         self.ac = self._ac_online()
         self.last_profile = self.hw.profile()
         self.running = True
+        self._power_settle = None  # (scadenza, profilo voluto), vedi POWER_SETTLE
         self._kb_settle = None
         self._kb_key = None  # scatto in attesa di Plasma (vedi KB_KEY_FALLBACK)
         self._kb_led = False
@@ -336,10 +341,22 @@ class Daemon:
                                 log.warning("cambio profilo automatico fallito: %s", e)
                             self.last_profile = self.hw.profile()
                             self._apply_fan()
-                if not events and ticks % 10:
+                        if wanted in self._available():
+                            self._power_settle = (time.monotonic() + POWER_SETTLE, wanted)
+                settling = self._power_settle and time.monotonic() < self._power_settle[0]
+                if not events and ticks % 10 and not settling:
                     continue
                 cur = self.hw.profile()
-                if cur and cur != self.last_profile:
+                if settling and cur and cur != self._power_settle[1]:
+                    log.info("profilo cambiato esternamente dopo il cambio di alimentazione: "
+                             "%s -> %s, rimetto %s", self.last_profile, cur, self._power_settle[1])
+                    try:
+                        self.hw.set_profile(self._power_settle[1])
+                    except (ValueError, OSError) as e:
+                        log.warning("ripristino profilo fallito: %s", e)
+                    self.last_profile = self.hw.profile()
+                    self._apply_fan()
+                elif cur and cur != self.last_profile:
                     log.info("profilo cambiato esternamente: %s -> %s", self.last_profile, cur)
                     self.last_profile = cur
                     self.hw.sync_secondary(cur)
