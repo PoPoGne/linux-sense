@@ -7,6 +7,16 @@ It was built on an Acer Nitro 14 (AN14-41) running Fedora 44 KDE with kernel 7.2
 
 ![features](https://img.shields.io/badge/license-GPL--3.0-blue)
 
+## Screenshots
+
+| Overview | Performance |
+|---|---|
+| ![Overview](docs/overview.png) | ![Performance](docs/performance.png) |
+
+Lighting page, Italian interface:
+
+![Lighting in Italian](docs/lighting-it.png)
+
 ## Features
 
 - **Thermal profiles**: Eco, Quiet, Balanced, Performance and Turbo, kept in sync with the laptop's physical profile key
