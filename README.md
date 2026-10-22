@@ -13,6 +13,14 @@ It was built on an Acer Nitro 14 (AN14-41) running Fedora 44 KDE with kernel 7.2
 |---|---|
 | ![Overview](docs/overview.png) | ![Performance](docs/performance.png) |
 
+| Lighting | Battery |
+|---|---|
+| ![Lighting](docs/lighting.png) | ![Battery](docs/battery.png) |
+
+| About |
+|---|
+| ![About](docs/about.png) |
+
 ## Features
 
 - **Thermal profiles**: Eco, Quiet, Balanced, Performance and Turbo, kept in sync with the laptop's physical profile key
