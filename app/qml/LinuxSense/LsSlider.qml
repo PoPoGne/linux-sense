@@ -4,7 +4,7 @@ import QtQuick.Controls.Basic
 Slider {
     id: control
     property color accentColor: Theme.accent
-    property var trackGradient: null   // Gradient opzionale per la traccia
+    property var trackGradient: null   // optional track gradient
     implicitHeight: 28
     hoverEnabled: true
 

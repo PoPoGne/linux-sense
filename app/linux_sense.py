@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Linux Sense — pannello di controllo per portatili Acer Nitro/Predator."""
+"""Linux Sense — control panel for Acer Nitro/Predator laptops."""
 
 import json
 import os
@@ -48,7 +48,7 @@ def find_hwmon(name):
 
 
 # --------------------------------------------------------------------------
-# Icone: SVG Lucide ricolorate al volo -> image://icon/<nome>/<rrggbb[aa]>
+# Icons: Lucide SVGs recolored on the fly -> image://icon/<name>/<rrggbb[aa]>
 # --------------------------------------------------------------------------
 class IconProvider(QQuickImageProvider):
     def __init__(self):
@@ -83,7 +83,7 @@ class IconProvider(QQuickImageProvider):
 
 
 # --------------------------------------------------------------------------
-# Telemetria (letta direttamente da sysfs, non serve root)
+# Telemetry (read directly from sysfs, no root needed)
 # --------------------------------------------------------------------------
 class Telemetry:
     def __init__(self):
@@ -128,7 +128,7 @@ class Telemetry:
         if status != "active":
             self._nv = {}
             return status
-        # interroga nvidia-smi solo se la GPU è già sveglia, ogni 2 secondi
+        # query nvidia-smi only if the GPU is already awake, every 2 seconds
         if self._tick % 2 == 0:
             try:
                 out = subprocess.run(
@@ -217,7 +217,7 @@ def system_info():
             cpu = line.split(":", 1)[1].strip()
             break
     gpus = []
-    if " w/ " in cpu:  # APU AMD: il nome della grafica integrata è nel modello CPU
+    if " w/ " in cpu:  # AMD APU: the integrated graphics name is in the CPU model
         gpus.append("AMD " + cpu.split(" w/ ", 1)[1].replace(" Graphics", ""))
     try:
         out = subprocess.run(["lspci"], capture_output=True, text=True, timeout=3).stdout
@@ -244,7 +244,7 @@ def system_info():
 
 
 # --------------------------------------------------------------------------
-# Worker: parla col demone e campiona la telemetria fuori dal thread UI
+# Worker: talks to the daemon and samples telemetry off the UI thread
 # --------------------------------------------------------------------------
 class Worker(QObject):
     stateReady = Signal("QVariantMap")
@@ -320,9 +320,9 @@ class Worker(QObject):
     def request(self, req):
         resp = self._call(dict(req))
         if resp is None:
-            self.failed.emit("Servizio Linux Sense non raggiungibile")
+            self.failed.emit("Linux Sense service unreachable")
         elif not resp.get("ok"):
-            self.failed.emit(resp.get("error") or "Operazione non riuscita")
+            self.failed.emit(resp.get("error") or "Operation failed")
             self.poll()
         else:
             self.stateReady.emit(resp["data"])
@@ -424,8 +424,8 @@ def main():
     app = QGuiApplication(sys.argv)
     app.setWindowIcon(QIcon(str(HERE / "logo" / "linux-sense.svg")))
 
-    # istanza singola: se l'app è già aperta (es. tasto N premuto di nuovo),
-    # passa il token di attivazione Wayland alla finestra esistente ed esce
+    # single instance: if the app is already open (e.g. the N key pressed again),
+    # pass the Wayland activation token to the existing window and exit
     instance = f"linux-sense-{os.getuid()}"
     probe = QLocalSocket()
     probe.connectToServer(instance)

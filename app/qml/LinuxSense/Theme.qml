@@ -4,7 +4,7 @@ import QtQuick
 QtObject {
     id: theme
 
-    // superfici
+    // surfaces
     readonly property color bg: "#0a0b0e"
     readonly property color sidebar: "#0c0e12"
     readonly property color surface: "#111319"
@@ -13,12 +13,12 @@ QtObject {
     readonly property color border: "#1d2129"
     readonly property color borderHi: "#2a2f3a"
 
-    // testo
+    // text
     readonly property color text: "#eceef3"
     readonly property color textDim: "#a1a7b3"
     readonly property color textMute: "#646b78"
 
-    // marchio
+    // brand
     readonly property color brand: "#ff2e4d"
     readonly property color brand2: "#ff8a3d"
     readonly property color danger: "#ff4d5e"
@@ -31,18 +31,18 @@ QtObject {
     readonly property int radius: 16
     readonly property int radiusSm: 10
 
-    // profili: dal più freddo al più caldo
+    // profiles: from coolest to hottest
     readonly property var profiles: [
         { id: "low-power", name: "Eco", icon: "leaf", color: "#2fe39b",
-          desc: "Massima autonomia, consumi ridotti al minimo." },
-        { id: "quiet", name: "Silenzioso", icon: "moon", color: "#4c9dff",
-          desc: "Ventole al minimo, per lavorare in silenzio." },
-        { id: "balanced", name: "Bilanciato", icon: "scale", color: "#9b7bff",
-          desc: "Equilibrio tra prestazioni, calore e rumore." },
-        { id: "balanced-performance", name: "Prestazioni", icon: "zap", color: "#ff8a3d",
-          desc: "Più potenza per giochi e carichi pesanti." },
+          desc: "Maximum battery life, lowest power draw." },
+        { id: "quiet", name: "Quiet", icon: "moon", color: "#4c9dff",
+          desc: "Fans at minimum, to work in silence." },
+        { id: "balanced", name: "Balanced", icon: "scale", color: "#9b7bff",
+          desc: "Balance between performance, heat and noise." },
+        { id: "balanced-performance", name: "Performance", icon: "zap", color: "#ff8a3d",
+          desc: "More power for games and heavy loads." },
         { id: "performance", name: "Turbo", icon: "flame", color: "#ff2e4d",
-          desc: "Tutta la potenza, ventole al massimo." }
+          desc: "Full power, fans at maximum." }
     ]
 
     function profileInfo(pid) {
@@ -51,7 +51,7 @@ QtObject {
         return profiles[2]
     }
 
-    // colore d'accento: segue il profilo attivo
+    // accent color: follows the active profile
     property string profile: "balanced"
     readonly property color accentRaw: profileInfo(profile).color
     property color accent: accentRaw

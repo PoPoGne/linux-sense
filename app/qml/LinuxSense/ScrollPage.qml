@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 
-// pagina scorrevole con margini uniformi
+// scrollable page with uniform margins
 Flickable {
     id: page
     default property alias content: col.data

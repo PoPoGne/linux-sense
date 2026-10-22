@@ -1,16 +1,16 @@
 #!/usr/bin/python3
 """Linux Sense daemon.
 
-Servizio root che espone i controlli del driver linuwu_sense (profili termici,
-ventole, tastiera RGB, batteria) tramite un socket Unix con JSON a righe.
+Root service that exposes the linuwu_sense driver controls (thermal profiles,
+fans, RGB keyboard, battery) over a Unix socket using line-based JSON.
 
-Rispetto al demone DAMX originale:
-- il profilo si legge/scrive sul gestore platform-profile "acer-wmi" e non
-  sull'interfaccia legacy /sys/firmware/acpi/platform_profile, che con più
-  gestori (acer-wmi + amd-pmf) restituisce "custom" quando divergono;
-- un thread osserva il profilo: i cambi fatti col tasto fisico vengono
-  rilevati, propagati agli altri gestori (amd-pmf) e ricordati;
-- il profilo viene ricordato separatamente per batteria e alimentatore.
+Compared to the original DAMX daemon:
+- the profile is read/written through the "acer-wmi" platform-profile handler
+  and not through the legacy /sys/firmware/acpi/platform_profile interface,
+  which returns "custom" when multiple handlers (acer-wmi + amd-pmf) disagree;
+- a thread watches the profile: changes made with the physical key are
+  detected, propagated to the other handlers (amd-pmf) and remembered;
+- the profile is remembered separately for battery and power adapter.
 """
 
 import json
@@ -34,7 +34,7 @@ KB = DRV / "four_zoned_kb"
 PROFILE_CLASS = Path("/sys/class/platform-profile")
 POWER_SUPPLY = Path("/sys/class/power_supply")
 
-# Profilo Acer -> preferenze per gli altri gestori (es. amd-pmf), in ordine
+# Acer profile -> preferences for the other handlers (e.g. amd-pmf), in order
 SECONDARY_MAP = {
     "low-power": ["low-power", "quiet", "cool", "balanced"],
     "quiet": ["quiet", "low-power", "cool", "balanced"],
@@ -43,29 +43,29 @@ SECONDARY_MAP = {
     "performance": ["performance", "balanced-performance", "balanced"],
 }
 
-# Il firmware (e il driver) accetta questi profili solo con l'alimentatore collegato
+# The firmware (and driver) only accepts these profiles with the power adapter connected
 AC_ONLY = {"quiet", "balanced-performance", "performance"}
-# In Eco/Silenzioso il driver forza le ventole in automatico
+# In Eco/Quiet the driver forces automatic fan control
 FAN_LOCKED = {"low-power", "quiet"}
-# Al cambio di alimentazione tuned-ppd applica il suo profilo (es. "balanced" a rete)
-# e riscrive platform_profile subito dopo di noi: per qualche secondo i cambi esterni
-# vengono annullati invece di essere ricordati come scelta dell'utente.
+# On power changes tuned-ppd applies its own profile (e.g. "balanced" on AC)
+# and rewrites platform_profile right after us: for a few seconds external changes
+# are discarded instead of being remembered as the user's choice.
 POWER_SETTLE = 5
 
-# Tasti Fn+F11/Fn+F12 (rimappati da hwdb su KEY_KBDILLUMDOWN/UP).
-# Il firmware cambia la luminosità di ±25 ma senza limiti: sotto 0 o sopra 100 il
-# valore "si riavvolge" (es. 8 - 25 = 239) e la tastiera impazzisce. Su Windows
-# NitroSense intercetta i tasti; qui lo fa il demone, a scatti di 25 con spegnimento.
+# Fn+F11/Fn+F12 keys (remapped by hwdb to KEY_KBDILLUMDOWN/UP).
+# The firmware changes brightness by ±25 with no clamping: below 0 or above 100 the
+# value wraps around (e.g. 8 - 25 = 239) and the keyboard goes haywire. On Windows
+# NitroSense intercepts the keys; here the daemon does it, in steps of 25 with off at 0.
 KEY_KBDILLUMDOWN = 229
 KEY_KBDILLUMUP = 230
 KB_STEP = 25
 INPUT_EVENT = struct.Struct("llHHi")
 
-# Il driver non registra un LED "kbd_backlight", quindi UPower e Plasma non vedono la
-# tastiera (popup sempre allo 0%). Il demone ne crea uno da userspace (modulo uleds)
-# con un livello per scatto: Plasma gestisce i tasti e mostra il popup, il demone
-# riceve il nuovo livello e lo applica. Se nessuno scrive il LED entro KB_KEY_FALLBACK
-# secondi dal tasto (es. alla schermata di accesso) lo scatto lo fa il demone.
+# The driver does not register a "kbd_backlight" LED, so UPower and Plasma do not see
+# the keyboard (popup always at 0%). The daemon creates one from userspace (uleds module)
+# with one level per step: Plasma handles the keys and shows the popup, the daemon
+# receives the new level and applies it. If nobody writes the LED within KB_KEY_FALLBACK
+# seconds from the key press (e.g. at the login screen) the daemon performs the step.
 ULEDS = "/dev/uleds"
 ULEDS_DEV = struct.Struct("64si")
 KB_LED_NAME = "acer::kbd_backlight"
@@ -100,7 +100,7 @@ def write(path, value):
         Path(path).write_text(str(value))
         return True
     except OSError as e:
-        log.error("scrittura %s = %r fallita: %s", path, value, e)
+        log.error("write %s = %r failed: %s", path, value, e)
         return False
 
 
@@ -118,8 +118,8 @@ class Hardware:
                 break
         else:
             self.laptop_type = "UNKNOWN"
-        # ogni lettura di queste feature è una chiamata WMI al firmware: le
-        # memorizziamo e le aggiorniamo solo quando le cambiamo noi
+        # every read of these features is a WMI call to the firmware: we cache
+        # them and refresh only when we change them ourselves
         self._cache = {}
 
     # --- profili -----------------------------------------------------------
@@ -145,14 +145,14 @@ class Hardware:
         return self._cache["choices"]
 
     def profile_files(self):
-        """File da osservare: il kernel li notifica quando il profilo cambia."""
+        """Files to watch: the kernel notifies them when the profile changes."""
         acer, _ = self._handlers()
         files = [acer / "profile"] if acer else []
         return files + [Path("/sys/firmware/acpi/platform_profile")]
 
     def set_profile(self, profile):
         if profile not in self.profile_choices():
-            raise ValueError(f"profilo non valido: {profile}")
+            raise ValueError(f"invalid profile: {profile}")
         acer, _ = self._handlers()
         ok = write(acer / "profile" if acer else "/sys/firmware/acpi/platform_profile", profile)
         self.sync_secondary(profile)
@@ -173,18 +173,18 @@ class Hardware:
             return None
         if name not in self._cache:
             v = read(self.base / name, None)
-            # None/-1: assente o non supportata dal firmware
+            # None/-1: missing or not supported by the firmware
             self._cache[name] = None if v is None or v == "-1" else v
         return self._cache[name]
 
     def set_feature(self, name, value):
         if self.feature(name) is None:
-            raise ValueError(f"funzione non supportata: {name}")
+            raise ValueError(f"unsupported feature: {name}")
         ok = write(self.base / name, value)
         self._cache.pop(name, None)
         return ok
 
-    # --- ventole -----------------------------------------------------------
+    # --- fans --------------------------------------------------------------
     def apply_fan(self, fan):
         if self.feature("fan_speed") is None:
             return False
@@ -200,13 +200,13 @@ class Hardware:
         return write(self.base / "fan_speed", value)
 
     def keyboard_brightness_hw(self):
-        """Luminosità attuale secondo il firmware (lettura WMI)."""
+        """Current brightness according to the firmware (WMI read)."""
         try:
             return int(read(KB / "four_zone_mode").split(",")[2])
         except (IndexError, ValueError):
             return None
 
-    # --- tastiera ----------------------------------------------------------
+    # --- keyboard ----------------------------------------------------------
     def has_keyboard(self):
         return (KB / "per_zone_mode").exists() and (KB / "four_zone_mode").exists()
 
@@ -228,7 +228,7 @@ class Hardware:
             zones = [z.lower().lstrip("#") for z in kb["zones"]]
             for z in zones:
                 if len(z) != 6:
-                    raise ValueError(f"colore non valido: {z}")
+                    raise ValueError(f"invalid color: {z}")
                 int(z, 16)
             return write(KB / "per_zone_mode", ",".join(zones) + f",{bright}\n")
         mode = KB_EFFECTS.index(effect)
@@ -284,7 +284,7 @@ class Daemon:
     def _source_key(self):
         return "profile_ac" if self.ac else "profile_battery"
 
-    # --- avvio e osservazione ---------------------------------------------
+    # --- startup and watching ----------------------------------------------
     def restore(self):
         with self.lock:
             if self.config.get("auto_profile"):
@@ -293,7 +293,7 @@ class Daemon:
                     try:
                         self.hw.set_profile(wanted)
                     except (ValueError, OSError) as e:
-                        log.warning("ripristino profilo fallito: %s", e)
+                        log.warning("profile restore failed: %s", e)
             self.hw.sync_secondary(self.hw.profile())
             self.last_profile = self.hw.profile()
             self._apply_fan()
@@ -301,14 +301,14 @@ class Daemon:
                 try:
                     self.hw.apply_keyboard(self.config["keyboard"])
                 except (ValueError, KeyError) as e:
-                    log.warning("stato tastiera non valido: %s", e)
+                    log.warning("invalid keyboard state: %s", e)
 
     def watch(self):
-        """Segue tasto fisico, cambi esterni e collegamento dell'alimentatore.
+        """Watches the physical key, external changes and power adapter plug events.
 
-        Leggere il profilo Acer è una chiamata WMI da ~9 ms: invece di interrogarlo
-        di continuo aspettiamo la notifica sysfs del kernel, con una verifica di
-        sicurezza ogni 10 secondi.
+        Reading the Acer profile is a ~9 ms WMI call: instead of polling it
+        continuously we wait for the kernel sysfs notification, with a safety
+        check every 10 seconds.
         """
         poller = select.poll()
         files = {}
@@ -325,20 +325,20 @@ class Daemon:
             events = poller.poll(1000)
             for fd, _ in events:
                 files[fd].seek(0)
-                files[fd].read()  # riarma la notifica
+                files[fd].read()  # re-arm the notification
             ticks += 1
             with self.lock:
                 ac = self._ac_online()
                 if ac != self.ac:
                     self.ac = ac
-                    log.info("alimentazione: %s", "rete" if ac else "batteria")
+                    log.info("power source: %s", "AC" if ac else "battery")
                     if self.config.get("auto_profile"):
                         wanted = self.config.get(self._source_key())
                         if wanted in self._available() and wanted != self.last_profile:
                             try:
                                 self.hw.set_profile(wanted)
                             except (ValueError, OSError) as e:
-                                log.warning("cambio profilo automatico fallito: %s", e)
+                                log.warning("automatic profile switch failed: %s", e)
                             self.last_profile = self.hw.profile()
                             self._apply_fan()
                         if wanted in self._available():
@@ -348,16 +348,16 @@ class Daemon:
                     continue
                 cur = self.hw.profile()
                 if settling and cur and cur != self._power_settle[1]:
-                    log.info("profilo cambiato esternamente dopo il cambio di alimentazione: "
-                             "%s -> %s, rimetto %s", self.last_profile, cur, self._power_settle[1])
+                    log.info("profile changed externally after power change: "
+                             "%s -> %s, restoring %s", self.last_profile, cur, self._power_settle[1])
                     try:
                         self.hw.set_profile(self._power_settle[1])
                     except (ValueError, OSError) as e:
-                        log.warning("ripristino profilo fallito: %s", e)
+                        log.warning("profile restore failed: %s", e)
                     self.last_profile = self.hw.profile()
                     self._apply_fan()
                 elif cur and cur != self.last_profile:
-                    log.info("profilo cambiato esternamente: %s -> %s", self.last_profile, cur)
+                    log.info("profile changed externally: %s -> %s", self.last_profile, cur)
                     self.last_profile = cur
                     self.hw.sync_secondary(cur)
                     self._apply_fan()
@@ -366,7 +366,7 @@ class Daemon:
                         self._save_config()
 
     def _apply_fan(self):
-        """Ventole secondo config, tranne nei profili in cui il driver le blocca."""
+        """Fans according to config, except in profiles where the driver locks them."""
         if self.last_profile in FAN_LOCKED:
             return self.hw.apply_fan({"mode": "auto"})
         return self.hw.apply_fan(self.config["fan"])
@@ -388,18 +388,18 @@ class Daemon:
         return None
 
     def watch_backlight_keys(self):
-        """Fn+F11/Fn+F12: corregge il passo del firmware (vedi KB_STEP).
+        """Fn+F11/Fn+F12: corrects the firmware step (see KB_STEP).
 
-        Legge la tastiera senza bloccarla e considera solo i due codici della
-        retroilluminazione: tutti gli altri tasti vengono ignorati. Lo scatto vero
-        lo fa Plasma tramite il LED (vedi ULEDS); il demone interviene da solo se
-        il LED manca o se nessuno lo aggiorna in tempo.
+        Reads the keyboard without grabbing it and only considers the two
+        backlight key codes: all other keys are ignored. The actual step is
+        performed by Plasma through the LED (see ULEDS); the daemon acts on its own
+        if the LED is missing or nobody updates it in time.
         """
         if not self.hw.has_keyboard():
             return
         path = self._keyboard_device()
         if not path:
-            log.warning("tastiera interna non trovata: tasti luminosità non gestiti")
+            log.warning("internal keyboard not found: brightness keys not handled")
             return
         with open(path, "rb", buffering=0) as dev:
             while self.running:
@@ -445,12 +445,12 @@ class Daemon:
     def _set_backlight(self, kb, brightness):
         kb["brightness"] = brightness
         self.config["keyboard"] = kb
-        self.hw.apply_keyboard(kb)  # ~1,5 ms: subito, anche premendo a raffica
+        self.hw.apply_keyboard(kb)  # ~1.5 ms: immediately, even when keys are mashed
         self._schedule_settle()
 
     def _schedule_settle(self):
-        # il firmware applica il proprio passo in parallelo: una sola verifica
-        # (e il salvataggio) a raffica finita
+        # the firmware applies its own step in parallel: a single check
+        # (and save) once the key mashing stops
         if self._kb_settle:
             self._kb_settle.cancel()
         self._kb_settle = threading.Timer(0.3, self._settle_backlight)
@@ -463,18 +463,18 @@ class Daemon:
             if self.hw.keyboard_brightness_hw() != kb["brightness"]:
                 self.hw.apply_keyboard(kb)
             self._save_config()
-            log.info("luminosità tastiera: %d", kb["brightness"])
+            log.info("keyboard brightness: %d", kb["brightness"])
 
-    # --- LED kbd_backlight per UPower/Plasma ---------------------------------
+    # --- kbd_backlight LED for UPower/Plasma ---------------------------------
     @staticmethod
     def _led_level(brightness):
         return (max(0, min(100, int(brightness))) + KB_STEP // 2) // KB_STEP
 
     def _publish_led(self):
-        """Comunica il livello attuale a UPower, che avvisa Plasma.
+        """Reports the current level to UPower, which notifies Plasma.
 
-        Passando da UPower (e non scrivendo direttamente il LED) Plasma riceve il
-        segnale di cambio e aggiorna il cursore e il prossimo scatto.
+        Going through UPower (instead of writing the LED directly) lets Plasma
+        receive the change signal and update the slider and the next step.
         """
         if not self._kb_led:
             return
@@ -494,7 +494,7 @@ class Daemon:
             fd = os.open(ULEDS, os.O_RDWR)
             os.write(fd, ULEDS_DEV.pack(KB_LED_NAME.encode(), KB_LED_MAX))
         except OSError as e:
-            log.warning("LED %s non creato (%s): Plasma non vedrà la luminosità", KB_LED_NAME, e)
+            log.warning("LED %s not created (%s): Plasma will not see the brightness", KB_LED_NAME, e)
             return
         with self.lock:
             level = self._led_level((self.config.get("keyboard") or {}).get("brightness", 0))
@@ -511,10 +511,10 @@ class Daemon:
             os.close(fd)
 
     def _led_written(self, level):
-        """Nuovo livello scritto sul LED (da Plasma, UPower o dal demone stesso)."""
+        """New level written to the LED (by Plasma, UPower or the daemon itself)."""
         with self.lock:
             if self._kb_key is not None:
-                self._kb_key[0].pop(0)  # lo scatto del tasto l'ha fatto Plasma
+                self._kb_key[0].pop(0)  # Plasma already performed the key step
                 if not self._kb_key[0]:
                     self._kb_key[1].cancel()
                     self._kb_key = None
@@ -523,7 +523,7 @@ class Daemon:
             if self._led_level(kb.get("brightness", 0)) != level:
                 self._set_backlight(kb, level * KB_STEP)
 
-    # --- stato -------------------------------------------------------------
+    # --- state -------------------------------------------------------------
     def state(self):
         hw = self.hw
         battery = {}
@@ -552,7 +552,7 @@ class Daemon:
             "battery": battery,
         }
 
-    # --- comandi -----------------------------------------------------------
+    # --- commands ----------------------------------------------------------
     def handle(self, req):
         cmd = req.get("cmd")
         with self.lock:
@@ -561,9 +561,9 @@ class Daemon:
             if cmd == "set_profile":
                 p = req["profile"]
                 if p not in self._available():
-                    raise ValueError("questo profilo richiede l'alimentatore collegato")
+                    raise ValueError("this profile requires the power adapter connected")
                 if not self.hw.set_profile(p):
-                    raise RuntimeError("il firmware ha rifiutato il profilo")
+                    raise RuntimeError("the firmware rejected the profile")
                 self.last_profile = self.hw.profile()
                 self.config[self._source_key()] = p
                 self._apply_fan()
@@ -576,14 +576,14 @@ class Daemon:
             if cmd == "set_fan":
                 mode = req.get("mode", "auto")
                 if mode not in ("auto", "max", "custom"):
-                    raise ValueError("modalità ventole non valida")
+                    raise ValueError("invalid fan mode")
                 fan = dict(self.config["fan"], mode=mode)
                 for k in ("cpu", "gpu"):
                     if k in req:
                         fan[k] = max(1, min(100, int(req[k])))
                 self.config["fan"] = fan
                 if not self._apply_fan():
-                    raise RuntimeError("impossibile impostare le ventole")
+                    raise RuntimeError("could not set the fans")
                 self._save_config()
                 return self.state()
             if cmd == "set_keyboard":
@@ -592,9 +592,9 @@ class Daemon:
                     if k in req:
                         kb[k] = req[k]
                 if kb["effect"] not in KB_EFFECTS:
-                    raise ValueError("effetto non valido")
+                    raise ValueError("invalid effect")
                 if not self.hw.apply_keyboard(kb):
-                    raise RuntimeError("impossibile impostare la tastiera")
+                    raise RuntimeError("could not set the keyboard")
                 self.config["keyboard"] = kb
                 self._save_config()
                 self._publish_led()
@@ -608,10 +608,10 @@ class Daemon:
             if cmd == "set_usb_charging":
                 level = int(req["level"])
                 if level not in USB_LEVELS:
-                    raise ValueError("livello non valido")
+                    raise ValueError("invalid level")
                 self.hw.set_feature("usb_charging", str(level))
                 return self.state()
-        raise ValueError(f"comando sconosciuto: {cmd}")
+        raise ValueError(f"unknown command: {cmd}")
 
     # --- server ------------------------------------------------------------
     def client(self, conn):
@@ -620,8 +620,8 @@ class Daemon:
                 try:
                     data = self.handle(json.loads(line))
                     resp = {"ok": True, "data": data}
-                except Exception as e:  # risposta d'errore al client, il demone continua
-                    log.warning("richiesta %r fallita: %s", line[:200], e)
+                except Exception as e:  # error response to the client, the daemon keeps running
+                    log.warning("request %r failed: %s", line[:200], e)
                     resp = {"ok": False, "error": str(e)}
                 f.write(json.dumps(resp).encode() + b"\n")
                 f.flush()
@@ -636,7 +636,7 @@ class Daemon:
         os.chmod(SOCKET_PATH, 0o666)
         srv.listen(8)
         srv.settimeout(1)
-        log.info("in ascolto su %s", SOCKET_PATH)
+        log.info("listening on %s", SOCKET_PATH)
         while self.running:
             try:
                 conn, _ = srv.accept()
@@ -652,13 +652,13 @@ class Daemon:
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    # il modulo può comparire qualche istante dopo l'avvio
+    # the module may show up a moment after boot
     for _ in range(30):
         if DRV.is_dir():
             break
         time.sleep(1)
     d = Daemon()
-    log.info("Linux Sense %s — %s, tipo %s", VERSION, d.state()["model"], d.hw.laptop_type)
+    log.info("Linux Sense %s — %s, type %s", VERSION, d.state()["model"], d.hw.laptop_type)
 
     def stop(*_):
         d.running = False

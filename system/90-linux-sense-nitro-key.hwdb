@@ -1,14 +1,15 @@
-# Linux Sense: tasti speciali dell'Acer Nitro AN14-41.
+# Linux Sense: special keys on the Acer Nitro AN14-41.
 #
-# 0xf5 tasto NitroSense ("N"): di default diventa il codice 425, che KDE non può
-#      usare per le scorciatoie. Lo rimappiamo su prog1 (XF86Launch1), assegnato
-#      in KDE all'apertura di Linux Sense.
-# 0xef Fn+F12 / 0xf0 Fn+F11, luminosità della tastiera: la regola generica Acer
-#      trasforma 0xef in "luminosità schermo giù". Li rimappiamo sui codici della
-#      retroilluminazione: Plasma fa lo scatto (LED acer::kbd_backlight creato dal
-#      demone) e il demone corregge il passo del firmware. La tastiera non invia il
-#      rilascio di questi due tasti: "!" lo fa generare al driver (force_release),
-#      altrimenti restano "premuti" e KWin ignora tutte le pressioni dopo la prima.
+# 0xf5 NitroSense key ("N"): by default it becomes code 425, which KDE cannot
+#      use for shortcuts. We remap it to prog1 (XF86Launch1), bound in KDE
+#      to opening Linux Sense.
+# 0xef Fn+F12 / 0xf0 Fn+F11, keyboard brightness: the generic Acer rule
+#      turns 0xef into "screen brightness down". We remap them to the backlight
+#      key codes: Plasma performs the step (acer::kbd_backlight LED created by
+#      the daemon) and the daemon corrects the firmware step. The keyboard does not
+#      send the release event for these two keys: "!" makes the driver generate it
+#      (force_release), otherwise they stay "pressed" and KWin ignores every press
+#      after the first.
 evdev:atkbd:dmi:*:svnAcer:pnNitroAN14-41:*
  KEYBOARD_KEY_f5=prog1
  KEYBOARD_KEY_ef=!kbdillumup

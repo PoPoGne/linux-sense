@@ -13,17 +13,17 @@ ScrollPage {
 
     PageHeader {
         Layout.fillWidth: true
-        title: "Panoramica"
-        subtitle: (page.st.model || "Acer") + " · stato del sistema in tempo reale"
+        title: "Overview"
+        subtitle: (page.st.model || "Acer") + " · live system status"
         Chip {
             icon: page.st.ac ? "plug" : "battery"
-            text: page.st.ac ? "Alimentatore" : "Batteria " + (page.bat.percent !== undefined ? page.bat.percent + "%" : "")
+            text: page.st.ac ? "Power adapter" : "Battery " + (page.bat.percent !== undefined ? page.bat.percent + "%" : "")
             tint: Theme.textDim
         }
         Chip { icon: Theme.profileInfo(page.prof.current).icon; text: Theme.profileInfo(page.prof.current).name; tint: Theme.accentRaw }
     }
 
-    // indicatori principali
+    // main indicators
     Card {
         Layout.fillWidth: true
         padding: 26
@@ -33,26 +33,26 @@ ScrollPage {
             Item { Layout.fillWidth: true; implicitHeight: g1.implicitHeight
                 Gauge { id: g1; anchors.centerIn: parent; label: "CPU"; unit: "°C"
                     value: page.tm.cpu_temp || 0; from: 30; to: 100; active: page.tm.cpu_temp !== undefined
-                    sublabel: page.tm.cpu_usage !== undefined && page.tm.cpu_usage !== null ? "Carico " + Math.round(page.tm.cpu_usage) + "%" : ""
+                    sublabel: page.tm.cpu_usage !== undefined && page.tm.cpu_usage !== null ? "Load " + Math.round(page.tm.cpu_usage) + "%" : ""
                     color: (page.tm.cpu_temp || 0) > 88 ? Theme.danger : Theme.accent }
             }
             Item { Layout.fillWidth: true; implicitHeight: g2.implicitHeight
                 Gauge { id: g2; anchors.centerIn: parent; label: "GPU"; unit: "°C"
                     value: page.tm.dgpu_temp || 0; from: 30; to: 95; active: !!page.tm.dgpu_active && page.tm.dgpu_temp !== undefined && page.tm.dgpu_temp !== null
-                    sublabel: page.tm.dgpu_active ? "Carico " + Math.round(page.tm.dgpu_util || 0) + "%" : "RTX in sospensione"
+                    sublabel: page.tm.dgpu_active ? "Load " + Math.round(page.tm.dgpu_util || 0) + "%" : "RTX suspended"
                     color: (page.tm.dgpu_temp || 0) > 85 ? Theme.danger : Theme.accent }
             }
             Item { Layout.fillWidth: true; implicitHeight: g3.implicitHeight
-                Gauge { id: g3; anchors.centerIn: parent; label: "Ventola CPU"; unit: ""
+                Gauge { id: g3; anchors.centerIn: parent; label: "CPU fan"; unit: ""
                     value: page.tm.fan_cpu || 0; from: 0; to: 7000
                     valueText: (page.tm.fan_cpu || 0) > 0 ? (page.tm.fan_cpu / 1000).toFixed(1) + "k" : "0"
-                    sublabel: "giri al minuto" }
+                    sublabel: "revolutions per minute" }
             }
             Item { Layout.fillWidth: true; implicitHeight: g4.implicitHeight
-                Gauge { id: g4; anchors.centerIn: parent; label: "Ventola GPU"; unit: ""
+                Gauge { id: g4; anchors.centerIn: parent; label: "GPU fan"; unit: ""
                     value: page.tm.fan_gpu || 0; from: 0; to: 7000
                     valueText: (page.tm.fan_gpu || 0) > 0 ? (page.tm.fan_gpu / 1000).toFixed(1) + "k" : "0"
-                    sublabel: "giri al minuto" }
+                    sublabel: "revolutions per minute" }
             }
         }
     }
@@ -61,12 +61,12 @@ ScrollPage {
         Layout.fillWidth: true
         spacing: 20
 
-        // profilo rapido
+        // quick profile switch
         Card {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
-            title: "Profilo"
-            subtitle: "Cambio rapido"
+            title: "Profile"
+            subtitle: "Quick switch"
             icon: "gauge"
             Repeater {
                 model: Theme.profiles
@@ -82,12 +82,12 @@ ScrollPage {
             }
         }
 
-        // storico temperature
+        // temperature history
         Card {
             Layout.fillWidth: true
             Layout.fillHeight: true
             title: "Temperature"
-            subtitle: "Ultimi 90 secondi"
+            subtitle: "Last 90 seconds"
             icon: "thermometer"
             headerRight: Row {
                 spacing: 16
@@ -135,15 +135,15 @@ ScrollPage {
             columns: 2
             columnSpacing: 36
             rowSpacing: 20
-            StatBar { Layout.fillWidth: true; icon: "cpu"; label: "Processore"
+            StatBar { Layout.fillWidth: true; icon: "cpu"; label: "Processor"
                 valueText: page.fmt(page.tm.cpu_usage, 0) + "%"; fraction: (page.tm.cpu_usage || 0) / 100 }
-            StatBar { Layout.fillWidth: true; icon: "memory-stick"; label: "Memoria"
+            StatBar { Layout.fillWidth: true; icon: "memory-stick"; label: "Memory"
                 valueText: page.fmt(page.tm.ram_used, 1) + " / " + page.fmt(page.tm.ram_total, 0) + " GB"
                 fraction: page.tm.ram_total ? page.tm.ram_used / page.tm.ram_total : 0 }
-            StatBar { Layout.fillWidth: true; icon: "monitor-smartphone"; label: "Grafica integrata Radeon 780M"
+            StatBar { Layout.fillWidth: true; icon: "monitor-smartphone"; label: "Radeon 780M integrated graphics"
                 valueText: page.fmt(page.tm.igpu_busy, 0) + "%"; fraction: (page.tm.igpu_busy || 0) / 100 }
             StatBar { Layout.fillWidth: true; icon: page.st.ac ? "battery-charging" : "battery"
-                label: page.bat.status === "Charging" ? "Batteria · in carica" : (page.st.ac ? "Batteria · alimentatore collegato" : "Batteria · consumo " + page.fmt(page.bat.power, 1) + " W")
+                label: page.bat.status === "Charging" ? "Battery · charging" : (page.st.ac ? "Battery · adapter connected" : "Battery · draw " + page.fmt(page.bat.power, 1) + " W")
                 valueText: page.fmt(page.bat.percent, 0) + "%"; fraction: (page.bat.percent || 0) / 100
                 color: (page.bat.percent || 0) < 20 ? Theme.danger : Theme.accent }
         }

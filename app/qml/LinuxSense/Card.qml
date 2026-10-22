@@ -17,7 +17,7 @@ Rectangle {
     border.width: 1
     implicitHeight: col.implicitHeight + padding * 2
 
-    // riflesso sottile in alto
+    // subtle highlight at the top
     Rectangle {
         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
         height: 1

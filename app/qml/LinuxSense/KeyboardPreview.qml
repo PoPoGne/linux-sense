@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 
-// Anteprima della tastiera a 4 zone con simulazione degli effetti
+// 4-zone keyboard preview with effect simulation
 Item {
     id: root
     property var zones: ["ff2e4d", "ff2e4d", "ff2e4d", "ff2e4d"]
@@ -10,7 +10,7 @@ Item {
     property int brightness: 100
     property int speed: 3
     property int direction: 1
-    property int selectedZone: -1          // evidenzia una zona (modalità statica)
+    property int selectedZone: -1          // highlights one zone (static mode)
     property bool animate: true
     signal zoneClicked(int zone)
 
@@ -24,7 +24,7 @@ Item {
         onTriggered: root.phase += 0.033 * (0.35 + root.speed * 0.22)
     }
 
-    // layout: [larghezza in unità] per riga; 0.5 = mezza altezza impilata
+    // layout: [width in units] per row; 0.5 = half-height stacked key
     readonly property var rows: [
         { h: 0.62, keys: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] },
         { h: 1, keys: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2] },
@@ -45,7 +45,7 @@ Item {
                     x += 1
                     continue
                 }
-                // W A S D (tasti trasparenti sul Nitro 14)
+                // W A S D (transparent keys on the Nitro 14)
                 var wasd = (r === 2 && k === 2) || (r === 3 && (k === 1 || k === 2 || k === 3))
                 list.push({ x: x, y: y, w: w, h: row.h, i: idx++, wasd: wasd })
                 x += w
@@ -64,7 +64,7 @@ Item {
     function rainbow(h) { h = h - Math.floor(h); return Qt.hsva(h, 0.95, 1, 1) }
     function hash(n) { var s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s) }
 
-    // restituisce [colore, intensità 0..1] di un tasto
+    // returns [color, intensity 0..1] for one key
     function keyLight(fx, fy, idx) {
         var t = phase, dir = direction === 2 ? -1 : 1
         var base = hexColor(effectColor)
@@ -99,7 +99,7 @@ Item {
         return [base, 1]
     }
 
-    // bagliore sotto la tastiera
+    // glow under the keyboard
     Item {
         id: glowSrc
         anchors.fill: board
@@ -131,7 +131,7 @@ Item {
         opacity: 0.75
     }
 
-    // scocca
+    // chassis
     Rectangle {
         id: board
         anchors.horizontalCenter: parent.horizontalCenter
@@ -163,7 +163,7 @@ Item {
                 border.color: Qt.rgba(light[0].r, light[0].g, light[0].b, (0.12 + 0.75 * lit) * (dimmed ? 0.35 : 1))
                 opacity: dimmed ? 0.55 : 1
 
-                // segno luminoso del tasto
+                // key light mark
                 Rectangle {
                     anchors.centerIn: parent
                     width: Math.min(parent.width * 0.32, root.unit * 0.3)
@@ -183,7 +183,7 @@ Item {
         }
     }
 
-    // etichette delle zone
+    // zone labels
     Row {
         anchors.top: board.bottom
         anchors.topMargin: 10
@@ -203,7 +203,7 @@ Item {
                 Caption {
                     anchors.horizontalCenter: parent.horizontalCenter
                     y: 7
-                    text: "Zona " + (index + 1)
+                    text: "Zone " + (index + 1)
                     color: index === root.selectedZone ? Theme.text : Theme.textMute
                 }
             }

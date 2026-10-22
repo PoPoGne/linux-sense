@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-// riga etichetta + valore + barra
+// label + value + bar row
 ColumnLayout {
     id: root
     property string icon: ""

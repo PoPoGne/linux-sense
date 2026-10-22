@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Genera il logo di Linux Sense con vectorcraft-cli (headless).
+"""Generates the Linux Sense logo with vectorcraft-cli (headless).
 
-Uso: build_logo.py <vectorcraft-cli> <cartella-output>
-Produce linux-sense.vectorcraft (sorgente modificabile), linux-sense.svg e PNG.
+Usage: build_logo.py <vectorcraft-cli> <output-folder>
+Produces linux-sense.vectorcraft (editable source), linux-sense.svg and PNGs.
 """
 import json
 import subprocess
@@ -17,7 +17,7 @@ ORANGE = "#ff8a3d"
 
 
 def hexagon(r, cx=512, cy=512):
-    # esagono con vertice in alto
+    # hexagon with a vertex at the top
     import math
     pts = []
     for i in range(6):
@@ -35,27 +35,27 @@ def add(cid, params=None):
 
 add("file.new", {"name": "Linux Sense", "width": 1024, "height": 1024, "units": "Pixels"})
 
-# 1. base esagonale scura
+# 1. dark hexagonal base
 add("path.create", {"d": hexagon(440)})
 add("paint.setFill", {"gradient": {"kind": "linear", "angle": -90, "stops": [
     {"offset": 0, "color": "#232834"}, {"offset": 1, "color": "#0a0c11"}]}})
 add("paint.setStroke", {"none": True})
 
-# 2. bordo con gradiente rosso -> arancio
+# 2. border with red -> orange gradient
 add("path.create", {"d": hexagon(440)})
 add("paint.setFill", {"none": True})
 add("paint.setStroke", {"gradient": {"kind": "linear", "angle": -60, "stops": [
     {"offset": 0, "color": RED}, {"offset": 1, "color": ORANGE}]}})
 add("stroke.set", {"weight": 24, "join": "miter", "align": "inside"})
 
-# 3. filo interno sottile
+# 3. thin inner line
 add("path.create", {"d": hexagon(384)})
 add("paint.setFill", {"none": True})
 add("paint.setStroke", {"color": "#ffffff"})
 add("stroke.set", {"weight": 3, "join": "miter"})
 add("transparency.set", {"opacity": 10})
 
-# 4. linee "HUD" orizzontali ai lati della S
+# 4. horizontal "HUD" lines on the sides of the S
 for d in ("M176 512 L318 512", "M706 512 L848 512"):
     add("path.create", {"d": d})
     add("paint.setFill", {"none": True})
@@ -63,7 +63,7 @@ for d in ("M176 512 L318 512", "M706 512 L848 512"):
     add("stroke.set", {"weight": 8, "cap": "butt"})
     add("transparency.set", {"opacity": 55})
 
-# 5. monogramma S angolare, come contorno esplicito con terminali tagliati a 45°
+# 5. angular S monogram, as an explicit outline with 45° cut ends
 def s_outline(h=42, slant=22):
     import math
     c = [(686, 330), (416, 330), (370, 376), (370, 466), (416, 512), (608, 512),
@@ -90,7 +90,7 @@ def s_outline(h=42, slant=22):
         return pts
 
     a, b = side(h), side(-h)
-    # terminali obliqui paralleli ("/"): il lato alto sporge a destra
+    # parallel slanted ends ("/"): the top side sticks out to the right
     for pts in (a, b):
         top = pts[0][1] < 330
         pts[0] = (pts[0][0] + (slant if top else -slant), pts[0][1])

@@ -8,7 +8,7 @@ ScrollPage {
     readonly property var prof: st.profile || {}
     readonly property var fan: st.fan || {}
 
-    // valori locali degli slider (inviati con un piccolo ritardo)
+    // local slider values (sent after a short delay)
     property int cpuPct: 50
     property int gpuPct: 50
     property bool editing: false
@@ -22,16 +22,16 @@ ScrollPage {
 
     PageHeader {
         Layout.fillWidth: true
-        title: "Prestazioni"
-        subtitle: "Profili termici e controllo delle ventole"
+        title: "Performance"
+        subtitle: "Thermal profiles and fan control"
         Chip {
             icon: page.st.ac ? "plug" : "battery"
-            text: page.st.ac ? "Alimentatore collegato" : "A batteria"
+            text: page.st.ac ? "Power adapter connected" : "On battery"
             tint: Theme.textDim
         }
     }
 
-    // avviso batteria
+    // battery warning
     Rectangle {
         visible: page.st.ac === false
         Layout.fillWidth: true
@@ -47,7 +47,7 @@ ScrollPage {
             Icon { name: "info"; size: 18; color: Theme.warning }
             Label {
                 Layout.fillWidth: true
-                text: "A batteria il firmware Acer consente solo Eco e Bilanciato. Collega l'alimentatore per Silenzioso, Prestazioni e Turbo."
+                text: "On battery the Acer firmware only allows Eco and Balanced. Connect the power adapter for Quiet, Performance and Turbo."
                 color: Theme.textDim
                 font.pixelSize: 13
                 wrapMode: Text.WordWrap
@@ -55,7 +55,7 @@ ScrollPage {
         }
     }
 
-    Caption { text: "Profilo termico"; Layout.topMargin: 4 }
+    Caption { text: "Thermal profile"; Layout.topMargin: 4 }
     RowLayout {
         Layout.fillWidth: true
         spacing: 14
@@ -80,18 +80,18 @@ ScrollPage {
             Layout.fillWidth: true
             Layout.preferredWidth: 3
             Layout.alignment: Qt.AlignTop
-            title: "Ventole"
+            title: "Fans"
             subtitle: page.fan.locked
-                      ? "In " + Theme.profileInfo(page.prof.current).name + " le ventole sono gestite automaticamente dal firmware."
-                      : "Regolazione automatica, massima o manuale."
+                      ? "In " + Theme.profileInfo(page.prof.current).name + " the fans are managed automatically by the firmware."
+                      : "Automatic, maximum or manual control."
             icon: "fan"
             headerRight: Segmented {
                 enabledState: !page.fan.locked
                 value: page.fan.locked ? "auto" : page.fan.mode
                 options: [
-                    { value: "auto", label: "Automatica" },
-                    { value: "max", label: "Massima" },
-                    { value: "custom", label: "Manuale" }
+                    { value: "auto", label: "Automatic" },
+                    { value: "max", label: "Maximum" },
+                    { value: "custom", label: "Manual" }
                 ]
                 onPicked: (v) => backend.setFan(v, page.cpuPct, page.gpuPct)
             }
@@ -99,8 +99,8 @@ ScrollPage {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 14
-                FanReadout { Layout.fillWidth: true; label: "Ventola CPU"; rpm: page.tm.fan_cpu || 0 }
-                FanReadout { Layout.fillWidth: true; label: "Ventola GPU"; rpm: page.tm.fan_gpu || 0 }
+                FanReadout { Layout.fillWidth: true; label: "CPU fan"; rpm: page.tm.fan_cpu || 0 }
+                FanReadout { Layout.fillWidth: true; label: "GPU fan"; rpm: page.tm.fan_gpu || 0 }
             }
 
             ColumnLayout {
@@ -110,8 +110,8 @@ ScrollPage {
                 spacing: 6
                 Repeater {
                     model: [
-                        { key: "cpu", label: "Velocità ventola CPU" },
-                        { key: "gpu", label: "Velocità ventola GPU" }
+                        { key: "cpu", label: "CPU fan speed" },
+                        { key: "gpu", label: "GPU fan speed" }
                     ]
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -143,8 +143,8 @@ ScrollPage {
             Layout.fillWidth: true
             Layout.preferredWidth: 2
             Layout.alignment: Qt.AlignTop
-            title: "Profilo automatico"
-            subtitle: "Ricorda un profilo per l'alimentatore e uno per la batteria, e li applica quando colleghi o scolleghi il cavo."
+            title: "Automatic profile"
+            subtitle: "Remembers one profile for the power adapter and one for battery, and applies them when you plug or unplug the cable."
             icon: "rotate-ccw"
             headerRight: Toggle {
                 checked: !!page.prof.auto
@@ -152,8 +152,8 @@ ScrollPage {
             }
             Repeater {
                 model: [
-                    { icon: "plug", label: "Con alimentatore", key: "ac" },
-                    { icon: "battery", label: "A batteria", key: "battery" }
+                    { icon: "plug", label: "On power adapter", key: "ac" },
+                    { icon: "battery", label: "On battery", key: "battery" }
                 ]
                 Rectangle {
                     Layout.fillWidth: true
@@ -177,7 +177,7 @@ ScrollPage {
             }
             Label {
                 Layout.fillWidth: true
-                text: "Anche il tasto fisico dei profili aggiorna queste preferenze: l'app si sincronizza da sola."
+                text: "The physical profile key updates these preferences too: the app syncs by itself."
                 color: Theme.textMute
                 font.pixelSize: 12
                 wrapMode: Text.WordWrap

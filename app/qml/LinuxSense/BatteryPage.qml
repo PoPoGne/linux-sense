@@ -16,13 +16,13 @@ ScrollPage {
         var m = Math.round(h * 60)
         return Math.floor(m / 60) + " h " + (m % 60 < 10 ? "0" : "") + (m % 60) + " min"
     }
-    readonly property string statusText: ({ "Charging": "In carica", "Discharging": "In uso a batteria",
-                                            "Full": "Carica completa", "Not charging": "Collegata, non in carica" })[b.status] || "Sconosciuto"
+    readonly property string statusText: ({ "Charging": "Charging", "Discharging": "On battery",
+                                            "Full": "Fully charged", "Not charging": "Plugged in, not charging" })[b.status] || "Unknown"
 
     PageHeader {
         Layout.fillWidth: true
-        title: "Batteria"
-        subtitle: "Stato, salute e protezione della batteria"
+        title: "Battery"
+        subtitle: "Battery status, health and protection"
         Chip { icon: b.status === "Charging" ? "battery-charging" : (page.st.ac ? "plug" : "battery"); text: page.statusText; tint: page.levelColor }
     }
 
@@ -33,7 +33,7 @@ ScrollPage {
             Layout.fillWidth: true
             spacing: 40
 
-            // batteria grafica
+            // battery graphic
             ColumnLayout {
                 spacing: 16
                 Item {
@@ -55,7 +55,7 @@ ScrollPage {
                                 GradientStop { position: 0.0; color: Theme.alpha(page.levelColor, 0.55) }
                                 GradientStop { position: 1.0; color: page.levelColor }
                             }
-                            // riflesso
+                            // reflection
                             Rectangle {
                                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 6 }
                                 height: parent.height * 0.3
@@ -91,14 +91,14 @@ ScrollPage {
                 columnSpacing: 20
                 Repeater {
                     model: [
-                        { icon: "activity", label: "Stato", value: page.statusText },
+                        { icon: "activity", label: "Status", value: page.statusText },
                         { icon: "zap", label: page.b.status === "Charging" ? "Potenza in ingresso" : "Consumo attuale",
                           value: page.fmt(page.b.power, 1, " W") },
-                        { icon: "rotate-ccw", label: page.b.status === "Charging" ? "Carica completa tra" : "Autonomia stimata",
+                        { icon: "rotate-ccw", label: page.b.status === "Charging" ? "Full charge in" : "Estimated runtime",
                           value: page.duration(page.b.hours) },
-                        { icon: "shield-check", label: "Salute", value: page.fmt(page.b.health, 0, "%") },
+                        { icon: "shield-check", label: "Health", value: page.fmt(page.b.health, 0, "%") },
                         { icon: "battery-full", label: "Capacità attuale", value: page.fmt(page.b.energy_full, 1, " Wh") + "  /  " + page.fmt(page.b.energy_design, 0, " Wh") },
-                        { icon: "rotate-ccw", label: "Cicli di carica", value: page.b.cycles !== undefined && page.b.cycles !== null && page.b.cycles > 0 ? page.b.cycles : "—" }
+                        { icon: "rotate-ccw", label: "Charge cycles", value: page.b.cycles !== undefined && page.b.cycles !== null && page.b.cycles > 0 ? page.b.cycles : "—" }
                     ]
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -125,8 +125,8 @@ ScrollPage {
             visible: page.feat.battery_limiter !== undefined
             Layout.fillWidth: true
             icon: "battery-charging"
-            title: "Limita la carica all'80%"
-            description: "Ferma la ricarica all'80% per rallentare l'usura. Consigliato se il portatile resta spesso collegato alla corrente."
+            title: "Limit charging to 80%"
+            description: "Stops charging at 80% to slow wear. Recommended if the laptop stays plugged in most of the time."
             Toggle {
                 checked: page.feat.battery_limiter === 1
                 onToggled: (v) => backend.setBatteryLimiter(v)
@@ -137,8 +137,8 @@ ScrollPage {
             visible: page.feat.usb_charging !== undefined
             Layout.fillWidth: true
             icon: "usb"
-            title: "Ricarica USB a portatile spento"
-            description: "Le porte USB continuano a ricaricare i dispositivi a PC spento, finché la batteria non scende alla soglia scelta."
+            title: "USB charging while powered off"
+            description: "USB ports keep charging devices while the laptop is off, until the battery drops to the chosen threshold."
             Segmented {
                 value: page.feat.usb_charging
                 options: [
@@ -155,8 +155,8 @@ ScrollPage {
     Card {
         visible: page.feat.battery_calibration !== undefined
         Layout.fillWidth: true
-        title: "Calibrazione"
-        subtitle: "Ricalibra l'indicatore di carica quando la percentuale non è affidabile."
+        title: "Calibration"
+        subtitle: "Recalibrate the charge indicator when the percentage is unreliable."
         icon: "gauge"
 
         RowLayout {
@@ -165,10 +165,10 @@ ScrollPage {
             Label {
                 Layout.fillWidth: true
                 text: page.feat.battery_calibration === 1
-                      ? "Calibrazione in corso. Tieni l'alimentatore collegato: la batteria verrà caricata, scaricata completamente e ricaricata."
+                      ? "Calibration in progress. Keep the power adapter connected: the battery will be charged, fully discharged and charged again."
                       : page.confirmCalibration
-                        ? "Serve l'alimentatore collegato e richiede alcune ore. La batteria verrà portata al 100%, scaricata fino a 0% e ricaricata. Confermi?"
-                        : "Da eseguire raramente, al massimo una volta ogni qualche mese."
+                        ? "Requires the power adapter connected and takes a few hours. The battery will be charged to 100%, discharged to 0% and charged again. Continue?"
+                        : "Run rarely, at most once every few months."
                 color: page.feat.battery_calibration === 1 || page.confirmCalibration ? Theme.text : Theme.textDim
                 font.pixelSize: 13
                 wrapMode: Text.WordWrap
@@ -176,19 +176,19 @@ ScrollPage {
             }
             LsButton {
                 visible: page.feat.battery_calibration !== 1 && !page.confirmCalibration
-                text: "Avvia calibrazione"
+                text: "Start calibration"
                 icon: "rotate-ccw"
                 enabledState: !!page.st.ac
                 onClicked: page.confirmCalibration = true
             }
             LsButton {
                 visible: page.confirmCalibration && page.feat.battery_calibration !== 1
-                text: "Annulla"
+                text: "Cancel"
                 onClicked: page.confirmCalibration = false
             }
             LsButton {
                 visible: page.confirmCalibration && page.feat.battery_calibration !== 1
-                text: "Avvia"
+                text: "Start"
                 primary: true
                 onClicked: { backend.setBatteryCalibration(true); page.confirmCalibration = false }
             }

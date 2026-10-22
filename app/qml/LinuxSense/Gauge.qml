@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 
-// indicatore ad arco 270°
+// 270° arc gauge
 Item {
     id: root
     property real value: 0
@@ -28,7 +28,7 @@ Item {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
-        // traccia
+        // track
         ShapePath {
             strokeColor: Theme.surfaceHover
             strokeWidth: root.thickness
@@ -40,7 +40,7 @@ Item {
                 startAngle: 135; sweepAngle: 270
             }
         }
-        // valore
+        // value
         ShapePath {
             strokeColor: root.color
             strokeWidth: root.thickness
@@ -54,7 +54,7 @@ Item {
         }
     }
 
-    // tacche
+    // ticks
     Repeater {
         model: 28
         Rectangle {

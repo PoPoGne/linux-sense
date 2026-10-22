@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-// riga impostazione: icona, titolo, descrizione, controllo a destra
+// setting row: icon, title, description, control on the right
 RowLayout {
     id: root
     property string icon: ""

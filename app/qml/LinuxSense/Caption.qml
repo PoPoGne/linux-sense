@@ -1,6 +1,6 @@
 import QtQuick
 
-// etichetta di sezione: maiuscolo spaziato
+// section label: spaced uppercase
 Text {
     color: Theme.textMute
     font.family: Theme.display

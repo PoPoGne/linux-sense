@@ -1,6 +1,6 @@
 import QtQuick
 
-// piccola pillola informativa
+// small informational pill
 Rectangle {
     id: root
     property string text

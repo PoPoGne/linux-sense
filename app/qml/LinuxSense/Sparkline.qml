@@ -1,6 +1,6 @@
 import QtQuick
 
-// grafico storico multi-serie su Canvas
+// multi-series history chart on Canvas
 Canvas {
     id: canvas
     property var series: []      // [{data: [...], color: "#..."}]
@@ -14,7 +14,7 @@ Canvas {
         var ctx = getContext("2d")
         ctx.reset()
         var w = width, h = height
-        // griglia
+        // grid
         ctx.strokeStyle = "rgba(255,255,255,0.05)"
         ctx.lineWidth = 1
         for (var g = 0; g <= 4; g++) {
@@ -45,7 +45,7 @@ Canvas {
             ctx.closePath()
             ctx.fillStyle = grad
             ctx.fill()
-            // linea
+            // line
             ctx.beginPath()
             ctx.moveTo(pts[0][0], pts[0][1])
             for (var q = 1; q < pts.length; q++) ctx.lineTo(pts[q][0], pts[q][1])
@@ -53,7 +53,7 @@ Canvas {
             ctx.lineWidth = 2
             ctx.lineJoin = "round"
             ctx.stroke()
-            // punto finale
+            // end point
             var last = pts[pts.length - 1]
             ctx.beginPath(); ctx.arc(last[0] - 3, last[1], 3.5, 0, Math.PI * 2)
             ctx.fillStyle = col; ctx.fill()

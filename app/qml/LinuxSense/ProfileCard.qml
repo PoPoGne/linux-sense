@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-// scheda selezionabile di un profilo termico
+// selectable thermal profile card
 Rectangle {
     id: root
     property var profile            // voce di Theme.profiles
@@ -19,7 +19,7 @@ Rectangle {
     opacity: available ? 1 : 0.42
     Behavior on color { ColorAnimation { duration: 160 } }
 
-    // bagliore in alto quando selezionata
+    // glow at the top when selected
     Rectangle {
         visible: root.selected
         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
@@ -31,7 +31,7 @@ Rectangle {
         }
     }
 
-    // versione estesa
+    // full version
     ColumnLayout {
         visible: !root.compact
         anchors.fill: parent
@@ -63,7 +63,7 @@ Rectangle {
         }
         Label {
             Layout.fillWidth: true
-            text: root.available ? (root.profile ? root.profile.desc : "") : "Disponibile solo con l'alimentatore collegato."
+            text: root.available ? (root.profile ? root.profile.desc : "") : "Only available with the power adapter connected."
             color: Theme.textDim
             font.pixelSize: 12
             wrapMode: Text.WordWrap
@@ -75,7 +75,7 @@ Rectangle {
         }
     }
 
-    // versione compatta (cruscotto)
+    // compact version (dashboard)
     RowLayout {
         visible: root.compact
         anchors.fill: parent

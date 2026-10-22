@@ -9,8 +9,8 @@ ScrollPage {
 
     PageHeader {
         Layout.fillWidth: true
-        title: "Informazioni"
-        subtitle: "Il tuo portatile e i componenti di Linux Sense"
+        title: "About"
+        subtitle: "Your laptop and the Linux Sense components"
     }
 
     RowLayout {
@@ -21,16 +21,16 @@ ScrollPage {
             Layout.fillWidth: true
             Layout.preferredWidth: 3
             Layout.alignment: Qt.AlignTop
-            title: "Dispositivo"
+            title: "Device"
             icon: "monitor-smartphone"
             Repeater {
                 model: [
-                    { k: "Modello", v: page.st.model || "—" },
+                    { k: "Model", v: page.st.model || "—" },
                     { k: "BIOS", v: page.st.bios || "—" },
-                    { k: "Processore", v: page.info.cpu || "—" },
-                    { k: "Grafica", v: (page.info.gpus || []).join("\n") || "—" },
-                    { k: "Memoria", v: page.tm.ram_total ? Number(page.tm.ram_total).toFixed(1) + " GB" : "—" },
-                    { k: "Sistema", v: page.info.os || "—" },
+                    { k: "Processor", v: page.info.cpu || "—" },
+                    { k: "Graphics", v: (page.info.gpus || []).join("\n") || "—" },
+                    { k: "Memory", v: page.tm.ram_total ? Number(page.tm.ram_total).toFixed(1) + " GB" : "—" },
+                    { k: "System", v: page.info.os || "—" },
                     { k: "Kernel", v: page.info.kernel || "—" }
                 ]
                 ColumnLayout {
@@ -59,9 +59,9 @@ ScrollPage {
                 Repeater {
                     model: [
                         { k: "Linux Sense", v: page.info.app_version || "—" },
-                        { k: "Servizio", v: backend.connected ? (page.st.version || "—") + " · attivo" : "non raggiungibile" },
+                        { k: "Service", v: backend.connected ? (page.st.version || "—") + " · running" : "unreachable" },
                         { k: "Driver linuwu_sense", v: page.st.driver_version || "—" },
-                        { k: "Famiglia", v: page.st.laptop_type === "NITRO" ? "Nitro" : (page.st.laptop_type === "PREDATOR" ? "Predator" : "—") }
+                        { k: "Family", v: page.st.laptop_type === "NITRO" ? "Nitro" : (page.st.laptop_type === "PREDATOR" ? "Predator" : "—") }
                     ]
                     RowLayout {
                         Layout.fillWidth: true
@@ -72,11 +72,11 @@ ScrollPage {
             }
             Card {
                 Layout.fillWidth: true
-                title: "Riconoscimenti"
+                title: "Credits"
                 icon: "info"
                 Label {
                     Layout.fillWidth: true
-                    text: "Linux Sense è software libero con licenza GPL-3.0. Usa il driver Linuwu-Sense (GPL-2.0 o successiva) ed è nato dal progetto DAMX di PXDiv (GPL-3.0). Icone Lucide (ISC), caratteri Rajdhani e Inter (SIL OFL)."
+                    text: "Linux Sense is free software under the GPL-3.0 license. It uses the Linuwu-Sense driver (GPL-2.0 or later) and started from the DAMX project by PXDiv (GPL-3.0). Lucide icons (ISC), Rajdhani and Inter fonts (SIL OFL)."
                     color: Theme.textDim
                     font.pixelSize: 12
                     wrapMode: Text.WordWrap

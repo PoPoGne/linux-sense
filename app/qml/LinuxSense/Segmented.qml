@@ -1,6 +1,6 @@
 import QtQuick
 
-// controllo segmentato con indicatore scorrevole
+// segmented control with sliding indicator
 Rectangle {
     id: root
     property var options: []          // [{value, label, icon?}]

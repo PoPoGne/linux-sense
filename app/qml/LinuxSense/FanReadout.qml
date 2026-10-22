@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-// ventola animata con velocità reale
+// animated fan with real speed
 Rectangle {
     id: root
     property string label
@@ -30,7 +30,7 @@ Rectangle {
                 name: "fan"
                 size: 28
                 color: root.rpm > 0 ? Theme.accentRaw : Theme.textMute
-                // rotazione proporzionale ai giri reali (rallentata per leggibilità)
+                // rotation proportional to real RPM (slowed for readability)
                 property real speed: root.rpm / 60 * 360 / 40
                 NumberAnimation on rotation {
                     running: root.rpm > 0 && root.visible

@@ -22,11 +22,11 @@ Window {
     Binding { target: Theme; property: "profile"; value: (win.st.profile || {}).current || "balanced" }
 
     readonly property var pages: [
-        { name: "Panoramica", icon: "layout-dashboard" },
-        { name: "Prestazioni", icon: "gauge" },
-        { name: "Illuminazione", icon: "keyboard" },
-        { name: "Batteria", icon: "battery-charging" },
-        { name: "Informazioni", icon: "info" }
+        { name: "Overview", icon: "layout-dashboard" },
+        { name: "Performance", icon: "gauge" },
+        { name: "Lighting", icon: "keyboard" },
+        { name: "Battery", icon: "battery-charging" },
+        { name: "About", icon: "info" }
     ]
 
     Rectangle {
@@ -37,7 +37,7 @@ Window {
         border.color: Theme.border
         border.width: win.maximized ? 0 : 1
 
-        // alone ambientale con il colore del profilo
+        // ambient glow tinted with the profile color
         Shape {
             anchors.fill: parent
             anchors.margins: 1
@@ -64,7 +64,7 @@ Window {
             anchors.margins: frame.border.width
             spacing: 0
 
-            // ---------------- barra laterale ----------------
+            // ---------------- sidebar ----------------
             Rectangle {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 232
@@ -73,7 +73,7 @@ Window {
                 Rectangle { anchors.right: parent.right; width: parent.radius; height: parent.height; color: parent.color }
                 Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
 
-                // trascinamento finestra anche dalla sidebar
+                // window dragging from the sidebar too
                 DragHandler {
                     target: null
                     onActiveChanged: if (active) win.startSystemMove()
@@ -85,7 +85,7 @@ Window {
                     anchors.topMargin: 22
                     spacing: 6
 
-                    // marchio
+                    // brand
                     RowLayout {
                         Layout.leftMargin: 6
                         Layout.bottomMargin: 26
@@ -132,7 +132,7 @@ Window {
 
                     Item { Layout.fillHeight: true }
 
-                    // stato del dispositivo
+                    // device status
                     Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: statusCol.implicitHeight + 28
@@ -162,7 +162,7 @@ Window {
                                     }
                                 }
                                 Label {
-                                    text: backend.connected ? "Servizio attivo" : "Servizio non attivo"
+                                    text: backend.connected ? "Service running" : "Service not running"
                                     color: Theme.textDim
                                     font.pixelSize: 12
                                 }
@@ -171,7 +171,7 @@ Window {
                                 spacing: 8
                                 Icon { name: Theme.profileInfo(Theme.profile).icon; size: 14; color: Theme.accentRaw }
                                 Label {
-                                    text: "Profilo " + Theme.profileInfo(Theme.profile).name
+                                    text: "Profile " + Theme.profileInfo(Theme.profile).name
                                     color: Theme.textDim
                                     font.pixelSize: 12
                                 }
@@ -181,13 +181,13 @@ Window {
                 }
             }
 
-            // ---------------- contenuto ----------------
+            // ---------------- content ----------------
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 0
 
-                // barra del titolo
+                // title bar
                 Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 48
@@ -210,7 +210,7 @@ Window {
                     }
                 }
 
-                // avviso servizio non raggiungibile
+                // service unreachable warning
                 Rectangle {
                     visible: !backend.connected
                     Layout.fillWidth: true
@@ -227,14 +227,14 @@ Window {
                         spacing: 12
                         Icon { name: "power"; size: 18; color: Theme.danger }
                         Label {
-                            text: "Il servizio Linux Sense non risponde. Avvialo con:  sudo systemctl start linux-sense"
+                            text: "The Linux Sense service is not responding. Start it with:  sudo systemctl start linux-sense"
                             color: Theme.text
                             font.pixelSize: 13
                         }
                     }
                 }
 
-                // pagine
+                // pages
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -257,7 +257,7 @@ Window {
             }
         }
 
-        // notifica temporanea
+        // temporary toast notification
         Rectangle {
             id: toast
             property bool error: false
@@ -298,7 +298,7 @@ Window {
     Component { id: battery; BatteryPage {} }
     Component { id: about; InfoPage {} }
 
-    // bordi per il ridimensionamento (finestra senza cornice)
+    // resize edges (frameless window)
     Repeater {
         model: win.maximized ? [] : [
             { e: Qt.LeftEdge, x: 0, y: 8, w: 6, h: -16, c: Qt.SizeHorCursor },

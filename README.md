@@ -2,73 +2,110 @@
 
 # Linux Sense
 
-Pannello di controllo per portatili **Acer Nitro** su Linux, alternativo a NitroSense.
-È nato su un Acer Nitro 14 (AN14-41) con Fedora 44 KDE e kernel 7.2.
+A control panel for **Acer Nitro** laptops on Linux, an alternative to NitroSense.
+It was built on an Acer Nitro 14 (AN14-41) running Fedora 44 KDE with kernel 7.2.
 
-- **Profili termici**: Eco, Silenzioso, Bilanciato, Prestazioni e Turbo, sincronizzati col tasto fisico dei profili
-- **Ventole**: automatiche, al massimo o manuali, con i giri in tempo reale
-- **Tastiera RGB a 4 zone**: colori per zona ed effetti, con anteprima animata
-- **Batteria**: limite di carica all'80%, calibrazione, ricarica USB a portatile spento, salute e autonomia
-- **Profilo automatico**: un profilo per l'alimentatore e uno per la batteria
-- **Tasto N** della tastiera per aprire l'app
+![features](https://img.shields.io/badge/license-GPL--3.0-blue)
 
-## Struttura
+## Features
 
-| Cartella | Contenuto |
+- **Thermal profiles**: Eco, Quiet, Balanced, Performance and Turbo, kept in sync with the laptop's physical profile key
+- **Fans**: automatic, maximum or manual, with live RPM readings
+- **4-zone RGB keyboard**: per-zone colors and effects, with an animated preview
+- **Battery**: 80% charge limit, calibration, USB charging while powered off, health and runtime
+- **Automatic profile**: one profile for the power adapter and one for battery
+- **N key** on the keyboard opens the app
+
+## How it works
+
+Linux Sense is made of three parts:
+
+| Path | Contents |
 |---|---|
-| `app/` | Interfaccia (Python + PySide6/QML), font e icone |
-| `daemon/` | Servizio root `linux-sense.service`: socket `/run/linux-sense.sock`, JSON a righe |
-| `driver/` | Driver `linuwu_sense` 25.701 per DKMS con le patch locali (`linux-sense.patch`) |
-| `system/` | Regola hwdb per il tasto N e unit per scaricare il driver allo spegnimento |
-| `scripts/` | Registrazione della scorciatoia KDE |
-| `logo/` | Logo generato con `vectorcraft-cli` (`build_logo.py`) e file esportati |
+| `app/` | User interface (Python + PySide6/QML), fonts and icons |
+| `daemon/` | Root service `linux-sense.service`: socket `/run/linux-sense.sock`, line-based JSON |
+| `driver/` | `linuwu_sense` 25.701 driver for DKMS with local patches (`linux-sense.patch`) |
+| `system/` | hwdb rule for the N key and the unit that unloads the driver on shutdown |
+| `scripts/` | KDE shortcut registration |
+| `logo/` | Logo generated with `vectorcraft-cli` (`build_logo.py`) and exported files |
 
-## Installazione
+The daemon talks to the kernel driver through sysfs and exposes a small JSON
+protocol over a Unix socket. The app is a QML front end that only talks to that
+socket, so the UI never needs root.
+
+## Requirements
+
+- An Acer Nitro or Predator laptop supported by the `linuwu_sense` driver (tested on Nitro AN14-41)
+- Fedora or a similar distribution with `dnf`, DKMS and kernel headers
+- KDE Plasma for the shortcut, brightness popup and key remapping (the app itself is Qt)
+- Packages: `python3-pyside6`, `kernel-devel`, `dkms`, `gcc`, `make`
+
+## Installation
 
 ```bash
 sudo ./install.sh
 ```
 
-Lo script:
-- compila e installa il driver con DKMS (si ricompila da solo a ogni kernel nuovo) e mette `acer_wmi` in blacklist;
-- installa servizio, app, icone e voce di menu in `/opt/linux-sense`;
-- rimappa il tasto N e lo assegna all'apertura dell'app in KDE.
+The script:
 
-Si può rilanciare per aggiornare dopo una modifica.
+- builds and installs the driver with DKMS (it rebuilds itself on every new kernel) and blacklists `acer_wmi`;
+- installs the service, the app, icons and menu entry in `/opt/linux-sense`;
+- remaps the N key and binds it to opening the app in KDE.
 
-Dipendenze: `python3-pyside6`, `kernel-devel`, `dkms`, `gcc`, `make`.
+You can run it again to update after a change.
 
-## Note tecniche
+## Usage
 
-- Il profilo si legge e si scrive sul gestore platform-profile `acer-wmi`. Il servizio lo propaga a `amd-pmf`.
-  L'interfaccia legacy `/sys/firmware/acpi/platform_profile` restituisce `custom` quando i due gestori divergono.
-- A batteria il firmware accetta solo Eco e Bilanciato.
-  In Eco e Silenzioso le ventole sono sempre gestite dal firmware.
-- Il tasto N invia lo scancode `0xf5`, che di default diventa il codice 425 e non è usabile da KDE.
-  Viene rimappato su `prog1` (XF86Launch1).
-- Luminosità della tastiera (Fn+F11 / Fn+F12): il firmware cambia la luminosità di ±25 senza limiti.
-  Sotto 0 o sopra 100 il valore si riavvolge (8 − 25 = 239) e la tastiera impazzisce.
-  Il servizio intercetta i due tasti, rimappati da hwdb su `kbdillumdown`/`kbdillumup`, e applica livelli 0–25–50–75–100 con spegnimento al minimo, come NitroSense.
-  Senza la rimappatura, la regola generica Acer di systemd trasformerebbe Fn+F12 in "luminosità schermo giù".
-- Leggere il profilo Acer o le impostazioni della batteria costa una chiamata WMI al firmware (~9 ms).
-  Il servizio le tiene in memoria e per il profilo usa le notifiche sysfs invece di interrogarlo di continuo.
+Open **Linux Sense** from the application menu, or press the **N** key.
+The app shows the current profile, temperatures, fan speeds and battery state.
+Changes are applied immediately; there is no save button.
 
-### Patch al driver
+If the app says the service is unreachable:
 
-Il driver viene da [Linuwu-Sense](https://github.com/0x7375646F/Linuwu-Sense), nella versione inclusa in [DAMX](https://github.com/PXDiv/Div-Acer-Manager-Max).
-Le modifiche sono due:
-- `strncpy` sostituito da `memcpy`, perché la funzione è stata rimossa dal kernel 7.x;
-- aggiunta del modello `Nitro AN14-41` alla tabella DMI, con le stesse impostazioni dell'AN16-41.
+```bash
+sudo systemctl start linux-sense
+sudo systemctl status linux-sense
+```
 
-## Licenza
+## Technical notes
 
-Linux Sense è distribuito con licenza [GNU GPL v3.0](LICENSE).
+- The profile is read from and written to the `acer-wmi` platform-profile handler. The service propagates it to `amd-pmf`.
+  The legacy `/sys/firmware/acpi/platform_profile` interface returns `custom` when the two handlers disagree.
+- On battery the firmware only accepts Eco and Balanced.
+  In Eco and Quiet the fans are always managed by the firmware.
+- The N key sends scancode `0xf5`, which by default becomes code 425 and cannot be used by KDE.
+  It is remapped to `prog1` (XF86Launch1).
+- Keyboard brightness (Fn+F11 / Fn+F12): the firmware changes brightness by ±25 with no clamping.
+  Below 0 or above 100 the value wraps around (8 − 25 = 239) and the keyboard misbehaves.
+  The service intercepts the two keys, remapped by hwdb to `kbdillumdown`/`kbdillumup`, and applies 0–25–50–75–100 levels with off at the minimum, like NitroSense.
+  Without the remapping, the generic Acer rule in systemd would turn Fn+F12 into "screen brightness down".
+- Reading the Acer profile or the battery settings costs one WMI call to the firmware (~9 ms).
+  The service caches them and uses sysfs notifications for the profile instead of polling continuously.
 
-## Crediti
+### Driver patch
 
-- Driver Linuwu-Sense (GPL-2.0-or-later)
-- Progetto di partenza DAMX (GPL-3.0)
-- Icone [Lucide](https://lucide.dev) (ISC)
-- Caratteri Rajdhani e Inter (SIL OFL)
+The driver comes from [Linuwu-Sense](https://github.com/0x7375646F/Linuwu-Sense), in the version bundled with [DAMX](https://github.com/PXDiv/Div-Acer-Manager-Max).
+The changes are:
 
-Ogni componente di terze parti mantiene la propria licenza.
+- `strncpy` replaced by `memcpy`, because the function was removed from kernel 7.x;
+- the `Nitro AN14-41` model added to the DMI table, with the same settings as the AN16-41.
+
+## Troubleshooting
+
+- **Fans do not react**: check `lsmod | grep linuwu_sense` and that `acer_wmi` is not loaded.
+- **Profile switches back by itself**: change the power source and wait a few seconds; the daemon reconciles external changes from `tuned-ppd`.
+- **No keyboard brightness popup**: the `uleds` module must be loaded and the daemon running.
+- **App opens but shows no data**: `sudo systemctl status linux-sense` and check `/run/linux-sense.sock` exists.
+
+## License
+
+Linux Sense is released under the [GNU GPL v3.0](LICENSE).
+
+## Credits
+
+- Linuwu-Sense driver (GPL-2.0-or-later)
+- DAMX starting project (GPL-3.0)
+- [Lucide](https://lucide.dev) icons (ISC)
+- Rajdhani and Inter fonts (SIL OFL)
+
+Every third-party component keeps its own license.
