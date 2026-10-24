@@ -26,7 +26,7 @@ import threading
 import time
 from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 SOCKET_PATH = "/run/linux-sense.sock"
 CONFIG_PATH = Path("/etc/linux-sense/config.json")
 

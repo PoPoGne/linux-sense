@@ -22,7 +22,7 @@ from PySide6.QtSvg import QSvgRenderer
 
 from i18n import Translator
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 HERE = Path(__file__).resolve().parent
 SOCKET_PATH = "/run/linux-sense.sock"
 HISTORY = 90
