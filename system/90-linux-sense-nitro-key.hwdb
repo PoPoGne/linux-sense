@@ -5,11 +5,10 @@
 #      to opening Linux Sense.
 # 0xef Fn+F12 / 0xf0 Fn+F11, keyboard brightness: the generic Acer rule
 #      turns 0xef into "screen brightness down". We remap them to the backlight
-#      key codes: Plasma performs the step (acer::kbd_backlight LED created by
-#      the daemon) and the daemon corrects the firmware step. The keyboard does not
-#      send the release event for these two keys: "!" makes the driver generate it
-#      (force_release), otherwise they stay "pressed" and KWin ignores every press
-#      after the first.
+#      key codes: the daemon replaces the firmware step with 5% steps (the Plasma
+#      shortcuts are disabled). The keyboard does not send the release event for
+#      these two keys: "!" makes the driver generate it (force_release), otherwise
+#      they stay "pressed" and only the first press is seen.
 evdev:atkbd:dmi:*:svnAcer:pnNitroAN14-41:*
  KEYBOARD_KEY_f5=prog1
  KEYBOARD_KEY_ef=!kbdillumup

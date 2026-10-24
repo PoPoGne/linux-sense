@@ -108,7 +108,7 @@ LINUX_SENSE_LANG=it ./linux-sense     # force a language
   It is remapped to `prog1` (XF86Launch1).
 - Keyboard brightness (Fn+F11 / Fn+F12): the firmware changes brightness by ±25 with no clamping.
   Below 0 or above 100 the value wraps around (8 − 25 = 239) and the keyboard misbehaves.
-  The service intercepts the two keys, remapped by hwdb to `kbdillumdown`/`kbdillumup`, and applies 0–25–50–75–100 levels with off at the minimum, like NitroSense.
+  The service intercepts the two keys, remapped by hwdb to `kbdillumdown`/`kbdillumup`, and applies 5% steps with off at the minimum. Plasma steps by 20% at best, so its two shortcuts are disabled and the service shows the Plasma popup itself.
   Without the remapping, the generic Acer rule in systemd would turn Fn+F12 into "screen brightness down".
 - Reading the Acer profile or the battery settings costs one WMI call to the firmware (~9 ms).
   The service caches them and uses sysfs notifications for the profile instead of polling continuously.

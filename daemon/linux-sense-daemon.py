@@ -16,6 +16,7 @@ Compared to the original DAMX daemon:
 import json
 import logging
 import os
+import pwd
 import select
 import signal
 import socket
@@ -55,22 +56,24 @@ POWER_SETTLE = 5
 # Fn+F11/Fn+F12 keys (remapped by hwdb to KEY_KBDILLUMDOWN/UP).
 # The firmware changes brightness by ±25 with no clamping: below 0 or above 100 the
 # value wraps around (e.g. 8 - 25 = 239) and the keyboard goes haywire. On Windows
-# NitroSense intercepts the keys; here the daemon does it, in steps of 25 with off at 0.
+# NitroSense intercepts the keys; here the daemon does it, in steps of 5 with off at 0.
 KEY_KBDILLUMDOWN = 229
 KEY_KBDILLUMUP = 230
-KB_STEP = 25
+KB_STEP = 5
 INPUT_EVENT = struct.Struct("llHHi")
 
 # The driver does not register a "kbd_backlight" LED, so UPower and Plasma do not see
 # the keyboard (popup always at 0%). The daemon creates one from userspace (uleds module)
-# with one level per step: Plasma handles the keys and shows the popup, the daemon
-# receives the new level and applies it. If nobody writes the LED within KB_KEY_FALLBACK
-# seconds from the key press (e.g. at the login screen) the daemon performs the step.
+# with one level per step, so the Plasma slider and the daemon stay in sync.
+# Plasma cannot handle the keys itself: with more than 7 levels powerdevil steps by 20%.
+# Its shortcuts are disabled (scripts/register-shortcut.sh): the daemon performs the
+# step and shows the Plasma popup in the active session (OSD_CALL).
 ULEDS = "/dev/uleds"
 ULEDS_DEV = struct.Struct("64si")
 KB_LED_NAME = "acer::kbd_backlight"
 KB_LED_MAX = 100 // KB_STEP
-KB_KEY_FALLBACK = 0.2
+OSD_CALL = ["busctl", "--user", "--timeout=1", "call", "org.kde.plasmashell", "/org/kde/osdService",
+            "org.kde.osdService", "keyboardBrightnessChanged", "i"]
 UPOWER_KBD = ["busctl", "--system", "--timeout=2", "call", "org.freedesktop.UPower",
               "/org/freedesktop/UPower/KbdBacklight", "org.freedesktop.UPower.KbdBacklight"]
 
@@ -249,8 +252,9 @@ class Daemon:
         self.running = True
         self._power_settle = None  # (scadenza, profilo voluto), vedi POWER_SETTLE
         self._kb_settle = None
-        self._kb_key = None  # scatto in attesa di Plasma (vedi KB_KEY_FALLBACK)
         self._kb_led = False
+        self._kb_published = None  # last level written to the LED by the daemon
+        self._kb_notify = threading.Event()
 
     # --- config ------------------------------------------------------------
     def _load_config(self):
@@ -391,9 +395,8 @@ class Daemon:
         """Fn+F11/Fn+F12: corrects the firmware step (see KB_STEP).
 
         Reads the keyboard without grabbing it and only considers the two
-        backlight key codes: all other keys are ignored. The actual step is
-        performed by Plasma through the LED (see ULEDS); the daemon acts on its own
-        if the LED is missing or nobody updates it in time.
+        backlight key codes: all other keys are ignored. LED and popup are
+        updated by notify_backlight, so mashing the keys is never slowed down.
         """
         if not self.hw.has_keyboard():
             return
@@ -409,28 +412,37 @@ class Daemon:
                 for i in range(0, len(data) - INPUT_EVENT.size + 1, INPUT_EVENT.size):
                     _, _, etype, code, value = INPUT_EVENT.unpack_from(data, i)
                     if etype == 1 and value in (1, 2) and code in (KEY_KBDILLUMDOWN, KEY_KBDILLUMUP):
-                        self._backlight_key(1 if code == KEY_KBDILLUMUP else -1)
+                        self.step_backlight(1 if code == KEY_KBDILLUMUP else -1)
+                        self._kb_notify.set()
 
-    def _backlight_key(self, direction):
-        with self.lock:
-            if not self._kb_led:
-                self.step_backlight(direction)
-                return
-            if self._kb_key is None:
-                self._kb_key = [[], threading.Timer(KB_KEY_FALLBACK, self._backlight_key_fallback)]
-                self._kb_key[1].daemon = True
-                self._kb_key[1].start()
-            self._kb_key[0].append(direction)
-            self._schedule_settle()
+    def notify_backlight(self):
+        """After the keys: LED (UPower/Plasma slider) and popup with the latest level."""
+        while self.running:
+            if not self._kb_notify.wait(1):
+                continue
+            self._kb_notify.clear()
+            with self.lock:
+                self._publish_led()
+                percent = (self.config.get("keyboard") or {}).get("brightness", 0)
+            self._show_osd(percent)
 
-    def _backlight_key_fallback(self):
-        with self.lock:
-            if self._kb_key is None:
+    @staticmethod
+    def _show_osd(percent):
+        # Plasma popup in the active session; at the login screen nobody answers
+        try:
+            sid = subprocess.run(["loginctl", "show-seat", "seat0", "--value", "-p", "ActiveSession"],
+                                 capture_output=True, text=True, timeout=2).stdout.strip()
+            uid = int(subprocess.run(["loginctl", "show-session", sid, "--value", "-p", "User"],
+                                     capture_output=True, text=True, timeout=2).stdout.strip())
+            bus = f"/run/user/{uid}/bus"
+            if uid == 0 or not os.path.exists(bus):
                 return
-            pending, self._kb_key = self._kb_key[0], None
-            for direction in pending:
-                self.step_backlight(direction)
-            self._publish_led()
+            subprocess.run(["setpriv", f"--reuid={uid}", f"--regid={pwd.getpwuid(uid).pw_gid}",
+                            "--clear-groups", "env", f"DBUS_SESSION_BUS_ADDRESS=unix:path={bus}"]
+                           + OSD_CALL + [str(percent)],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2)
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+            pass
 
     def step_backlight(self, direction):
         with self.lock:
@@ -479,6 +491,7 @@ class Daemon:
         if not self._kb_led:
             return
         level = self._led_level((self.config.get("keyboard") or {}).get("brightness", 0))
+        self._kb_published = level
         try:
             subprocess.run(UPOWER_KBD + ["SetBrightness", "i", str(level)], check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -499,6 +512,7 @@ class Daemon:
         with self.lock:
             level = self._led_level((self.config.get("keyboard") or {}).get("brightness", 0))
             write(Path("/sys/class/leds") / KB_LED_NAME / "brightness", str(level))
+            self._kb_published = level
             self._kb_led = True
         try:
             while self.running:
@@ -513,11 +527,9 @@ class Daemon:
     def _led_written(self, level):
         """New level written to the LED (by Plasma, UPower or the daemon itself)."""
         with self.lock:
-            if self._kb_key is not None:
-                self._kb_key[0].pop(0)  # Plasma already performed the key step
-                if not self._kb_key[0]:
-                    self._kb_key[1].cancel()
-                    self._kb_key = None
+            if level == self._kb_published:
+                return  # our own write: meanwhile the keys may have gone further
+            self._kb_published = level
             kb = dict(self.config.get("keyboard") or self.hw.keyboard_from_driver())
             level = max(0, min(KB_LED_MAX, level))
             if self._led_level(kb.get("brightness", 0)) != level:
@@ -669,6 +681,7 @@ def main():
     threading.Thread(target=d.watch, daemon=True).start()
     threading.Thread(target=d.watch_backlight_keys, daemon=True).start()
     threading.Thread(target=d.watch_backlight_led, daemon=True).start()
+    threading.Thread(target=d.notify_backlight, daemon=True).start()
     d.serve()
 
 
