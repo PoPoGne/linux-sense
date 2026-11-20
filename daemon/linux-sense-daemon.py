@@ -412,8 +412,23 @@ class Daemon:
                 for i in range(0, len(data) - INPUT_EVENT.size + 1, INPUT_EVENT.size):
                     _, _, etype, code, value = INPUT_EVENT.unpack_from(data, i)
                     if etype == 1 and value in (1, 2) and code in (KEY_KBDILLUMDOWN, KEY_KBDILLUMUP):
-                        self.step_backlight(1 if code == KEY_KBDILLUMUP else -1)
-                        self._kb_notify.set()
+                        if self._desktop_handles_backlight_keys():
+                            # GNOME steps the kbd_backlight LED itself (one level = KB_STEP)
+                            # and shows its own popup: we only undo the firmware step
+                            with self.lock:
+                                self._schedule_settle()
+                        else:
+                            self.step_backlight(1 if code == KEY_KBDILLUMUP else -1)
+                            self._kb_notify.set()
+
+    @staticmethod
+    def _desktop_handles_backlight_keys():
+        """True in GNOME-based sessions (Zorin, Ubuntu...), whose media-keys
+        daemon already handles XF86KbdBrightnessUp/Down through UPower."""
+        for comm in Path("/proc").glob("[0-9]*/comm"):
+            if read(comm) == "gsd-media-keys":
+                return True
+        return False
 
     def notify_backlight(self):
         """After the keys: LED (UPower/Plasma slider) and popup with the latest level."""
@@ -514,6 +529,7 @@ class Daemon:
             write(Path("/sys/class/leds") / KB_LED_NAME / "brightness", str(level))
             self._kb_published = level
             self._kb_led = True
+        self._ensure_upower_led()
         try:
             while self.running:
                 if not select.select([fd], [], [], 1)[0]:
@@ -523,6 +539,24 @@ class Daemon:
                     self._led_written(struct.unpack("i", data)[0])
         finally:
             os.close(fd)
+
+    @staticmethod
+    def _ensure_upower_led():
+        """UPower looks for kbd_backlight LEDs only when it starts: if it started
+        before us (usual at boot, or after a daemon restart) it does not see the
+        keyboard, and GNOME/Plasma cannot handle its brightness. Restart it then."""
+        try:
+            if subprocess.run(["systemctl", "is-active", "--quiet", "upower.service"]).returncode:
+                return  # not running: it will find the LED when it starts
+            # GetBrightness also fails when UPower still holds the LED of a previous
+            # daemon instance (the uleds device disappears with our process)
+            missing = subprocess.run(UPOWER_KBD + ["GetBrightness"],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+            if missing:
+                log.info("UPower does not see %s: restarting it", KB_LED_NAME)
+                subprocess.run(["systemctl", "try-restart", "upower.service"], timeout=10)
+        except (OSError, subprocess.SubprocessError) as e:
+            log.warning("UPower check failed: %s", e)
 
     def _led_written(self, level):
         """New level written to the LED (by Plasma, UPower or the daemon itself)."""
@@ -580,6 +614,11 @@ class Daemon:
                 self.config[self._source_key()] = p
                 self._apply_fan()
                 self._save_config()
+                return self.state()
+            if cmd == "restore":
+                # after resume: the firmware may have reset profile, fans and lighting
+                self.ac = self._ac_online()
+                self.restore()
                 return self.state()
             if cmd == "set_auto_profile":
                 self.config["auto_profile"] = bool(req["enabled"])

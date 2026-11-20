@@ -1,0 +1,14 @@
+#!/bin/sh
+# systemd-sleep hook: after resume, ask the daemon to re-apply profile, fans and
+# keyboard lighting (the firmware may reset them). The daemon is not restarted,
+# so the kbd_backlight LED seen by UPower stays in place.
+[ "$1" = post ] || exit 0
+/usr/bin/python3 - <<'PY' || true
+import socket
+s = socket.socket(socket.AF_UNIX)
+s.settimeout(5)
+s.connect("/run/linux-sense.sock")
+s.sendall(b'{"cmd": "restore"}\n')
+s.recv(65536)
+PY
+exit 0

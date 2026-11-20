@@ -16,7 +16,10 @@ rm -f /usr/local/bin/DAMX /usr/share/applications/damx.desktop /usr/share/icons/
 # linuwu_sense driver via DKMS (patch for kernel 7.x and Nitro AN14-41)
 VER=$(sed -n 's/^PACKAGE_VERSION="\(.*\)"/\1/p' "$SRC/driver/dkms.conf")
 if ! dkms status "linuwu_sense/$VER" 2>/dev/null | grep -q installed; then
-    command -v dkms >/dev/null || dnf install -y dkms
+    if ! command -v dkms >/dev/null; then
+        if command -v dnf >/dev/null; then dnf install -y dkms kernel-devel
+        else apt-get install -y dkms "linux-headers-$(uname -r)"; fi
+    fi
     rm -rf "/usr/src/linuwu_sense-$VER"
     cp -r "$SRC/driver" "/usr/src/linuwu_sense-$VER"
     dkms add "linuwu_sense/$VER" 2>/dev/null || true
@@ -46,10 +49,23 @@ install -D -m 755 "$SRC/daemon/linux-sense-daemon.py" "$DEST/daemon/linux-sense-
 find "$DEST" -name __pycache__ -prune -exec rm -rf {} +
 chmod 755 "$DEST/app/linux_sense.py"
 
+# PySide6: system package on Fedora (python3-pyside6); on Ubuntu/Zorin it is not
+# packaged, so it goes in a venv inside $DEST (kept across updates)
+PY=/usr/bin/python3
+if ! $PY -c 'import PySide6.QtQuickControls2' 2>/dev/null; then
+    if [ ! -x "$DEST/venv/bin/python" ]; then
+        command -v apt-get >/dev/null && apt-get install -y python3-venv libxcb-cursor0
+        $PY -m venv "$DEST/venv"
+    fi
+    "$DEST/venv/bin/pip" install -q --upgrade PySide6-Essentials
+    PY="$DEST/venv/bin/python"
+fi
+
 cat > /etc/systemd/system/linux-sense.service <<UNIT
 [Unit]
 Description=Linux Sense (Acer profiles, fans, keyboard and battery)
-After=systemd-modules-load.service
+# after the power profile services, which restore their own profile at boot
+After=systemd-modules-load.service power-profiles-daemon.service tuned.service tuned-ppd.service
 Wants=systemd-modules-load.service
 
 [Service]
@@ -64,7 +80,7 @@ UNIT
 
 cat > /usr/local/bin/linux-sense <<LAUNCH
 #!/bin/sh
-exec /usr/bin/python3 $DEST/app/linux_sense.py "\$@"
+exec $PY $DEST/app/linux_sense.py "\$@"
 LAUNCH
 chmod 755 /usr/local/bin/linux-sense
 
@@ -89,11 +105,14 @@ DESK
 gtk-update-icon-cache -q -f /usr/share/icons/hicolor 2>/dev/null || true
 update-desktop-database -q /usr/share/applications 2>/dev/null || true
 
+# after suspend the firmware may reset fans, profile and lighting: restore them
+install -D -m 755 "$SRC/system/linux-sense-sleep" /usr/lib/systemd/system-sleep/linux-sense
+
 systemctl daemon-reload
 systemctl enable linuwu_sense.service linux-sense.service >/dev/null 2>&1
 systemctl restart linux-sense.service
 
-# KDE shortcut in the session of the user who ran the installation
+# N key shortcut (KDE or GNOME) in the session of the user who ran the installation
 if [ -n "${SUDO_USER:-}" ]; then
     BUS="/run/user/$(id -u "$SUDO_USER")/bus"
     [ -S "$BUS" ] && sudo -u "$SUDO_USER" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" \
