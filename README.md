@@ -34,9 +34,11 @@ It was built on an Acer Nitro 14 (AN14-41) running Fedora 44 KDE with kernel 7.2
 ## Requirements
 
 - An Acer Nitro or Predator laptop supported by the `linuwu_sense` driver (tested on Nitro AN14-41)
-- Fedora or a similar distribution with `dnf`, DKMS and kernel headers
-- KDE Plasma for the shortcut, brightness popup and key remapping (the app itself is Qt)
-- Packages: `python3-pyside6`, `kernel-devel`, `dkms`, `gcc`, `make`
+- Fedora (`dnf`) or Ubuntu-based distributions such as Zorin OS (`apt`), with DKMS and kernel headers
+- KDE Plasma or GNOME (tested on Zorin OS 18) for the N key shortcut and the keyboard brightness popup (the app itself is Qt)
+- Packages on Fedora: `python3-pyside6`, `kernel-devel`, `dkms`, `gcc`, `make`
+- Packages on Ubuntu/Debian: `dkms`, `linux-headers-$(uname -r)`, `build-essential`, `python3-venv`.
+  PySide6 is not packaged there, so `install.sh` installs it with pip in a venv under `/opt/linux-sense/venv`
 
 ## Installation
 
@@ -48,7 +50,9 @@ The script:
 
 - builds and installs the driver with DKMS (it rebuilds itself on every new kernel) and blacklists `acer_wmi`;
 - installs the service, the app, icons and menu entry in `/opt/linux-sense`;
-- remaps the N key and binds it to opening the app in KDE.
+- remaps the N key and binds it to opening the app in KDE or GNOME;
+- installs a systemd sleep hook that restores profile, fans and lighting after resume
+  (the firmware may reset them during suspend).
 
 You can run it again to update after a change.
 
@@ -109,6 +113,10 @@ LINUX_SENSE_LANG=it ./linux-sense     # force a language
 - Keyboard brightness (Fn+F11 / Fn+F12): the firmware changes brightness by ±25 with no clamping.
   Below 0 or above 100 the value wraps around (8 − 25 = 239) and the keyboard misbehaves.
   The service intercepts the two keys, remapped by hwdb to `kbdillumdown`/`kbdillumup`, and applies 5% steps with off at the minimum. Plasma steps by 20% at best, so its two shortcuts are disabled and the service shows the Plasma popup itself.
+  On GNOME, gnome-settings-daemon already steps the `kbd_backlight` LED by one level (5%) and shows its own popup:
+  the service only undoes the firmware step, so each key press counts once.
+- UPower looks for `kbd_backlight` LEDs only when it starts. The LED is created by the service, so if UPower
+  started first (usual at boot) the service restarts it, otherwise the desktop would not see the keyboard.
   Without the remapping, the generic Acer rule in systemd would turn Fn+F12 into "screen brightness down".
 - Reading the Acer profile or the battery settings costs one WMI call to the firmware (~9 ms).
   The service caches them and uses sysfs notifications for the profile instead of polling continuously.
